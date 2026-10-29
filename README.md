@@ -18,6 +18,8 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Actualizar el repositorio
 
-git add .
-git commit -m "lo que quieras poner"
+git add . 
+
+git commit -m "lo que quieras poner" 
+
 git push 
