@@ -23,3 +23,7 @@ git add .
 git commit -m "lo que quieras poner" 
 
 git push -u origin main
+
+## Ejecutar esto en vuestro proyecto
+
+flutter pub add firebase_core
