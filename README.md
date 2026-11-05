@@ -22,4 +22,4 @@ git add .
 
 git commit -m "lo que quieras poner" 
 
-git push 
+git push -u origin main
