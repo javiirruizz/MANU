@@ -13,6 +13,7 @@ class Usuario {
     this.puedeEditarPerfil = false,
     this.preferenciaVisualizacion = '',
     this.preferenciaEnvios = '',
+    this.comedorId,
   });
 
   final String id;
@@ -24,6 +25,7 @@ class Usuario {
   final bool puedeEditarPerfil;
   final String preferenciaVisualizacion;
   final String preferenciaEnvios;
+  final String? comedorId;
 
   int get edad {
     final hoy = DateTime.now();
@@ -45,6 +47,7 @@ class Usuario {
     puedeEditarPerfil: m['puedeEditarPerfil'] ?? false,
     preferenciaVisualizacion: m['preferenciaVisualizacion'] ?? '',
     preferenciaEnvios: m['preferenciaEnvios'] ?? '',
+    comedorId: m['comedorId'],
   );
 
   Map<String, dynamic> toMap() => {
@@ -56,5 +59,6 @@ class Usuario {
     'puedeEditarPerfil': puedeEditarPerfil,
     'preferenciaVisualizacion': preferenciaVisualizacion,
     'preferenciaEnvios': preferenciaEnvios,
+    'comedorId': comedorId,
   };
 }
