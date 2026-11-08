@@ -1,40 +1,53 @@
 import 'menu.dart';
+import 'tarea.dart';
 
 /// Modelo de datos que representa un pictograma.
-/// Relación: * a * con [Menu] (Un pictograma puede estar presente en varios menús
-/// y un menú puede contener varios pictogramas).
+/// Relaciones:
+/// - * a * con [Menu] (Un pictograma puede estar presente en varios menús
+///   y un menú puede contener varios pictogramas).
+/// - * a * con [Tarea] (Un pictograma puede estar asociado a varias tareas
+///   y una tarea puede contener varios pictogramas).
 class Pictograma {
   const Pictograma({
     required this.idPictograma,
     required this.nombre,
     this.menus = const [],
+    this.tareas = const [],
   });
 
   final String idPictograma;
   final String nombre;
   final List<Menu> menus;
+  final List<Tarea> tareas;
 
   /// Crea una copia de este pictograma modificando únicamente los campos indicados.
   Pictograma copyWith({
     String? idPictograma,
     String? nombre,
     List<Menu>? menus,
+    List<Tarea>? tareas,
   }) {
     return Pictograma(
       idPictograma: idPictograma ?? this.idPictograma,
       nombre: nombre ?? this.nombre,
       menus: menus ?? this.menus,
+      tareas: tareas ?? this.tareas,
     );
   }
 
   /// Convierte la entidad a un mapa compatible con JSON o Firebase.
-  /// [includeMenus] permite evitar referencias circulares durante la serialización.
-  Map<String, dynamic> toMap({bool includeMenus = false}) {
+  /// [includeMenus] e [includeTareas] permiten evitar referencias circulares durante la serialización.
+  Map<String, dynamic> toMap({
+    bool includeMenus = false,
+    bool includeTareas = false,
+  }) {
     return {
       'idPictograma': idPictograma,
       'nombre': nombre,
       if (includeMenus)
         'menus': menus.map((m) => m.toMap()).toList(),
+      if (includeTareas)
+        'tareas': tareas.map((t) => t.toMap()).toList(),
     };
   }
 
@@ -43,6 +56,7 @@ class Pictograma {
     Map<String, dynamic> map, {
     String? id,
     List<Menu>? menus,
+    List<Tarea>? tareas,
   }) {
     return Pictograma(
       idPictograma: id ?? map['idPictograma'] as String? ?? '',
@@ -57,6 +71,23 @@ class Pictograma {
                       platos: const [],
                       postre: '',
                       fecha: DateTime.now(),
+                    ))
+              .toList() ??
+          const [],
+      tareas: tareas ??
+          (map['tareas'] as List<dynamic>?)
+              ?.map((item) => item is Map<String, dynamic>
+                  ? Tarea.fromMap(item['id'] as String? ?? '', item)
+                  : Tarea(
+                      id: item.toString(),
+                      nombre: '',
+                      descripcion: '',
+                      fecha: DateTime.now(),
+                      horario: '',
+                      horaInicio: DateTime.now(),
+                      horaFinal: DateTime.now(),
+                      aulaId: '',
+                      creadaPor: '',
                     ))
               .toList() ??
           const [],

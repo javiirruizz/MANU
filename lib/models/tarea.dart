@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'paso.dart';
+import 'pictograma.dart';
 
+/// Modelo de datos que representa una tarea.
+/// Relación: * a * con [Pictograma] (Una tarea puede contener/asociar varios pictogramas
+/// y un pictograma puede estar asociado a varias tareas).
 class Tarea {
   const Tarea({
     required this.id,
@@ -16,6 +20,7 @@ class Tarea {
     this.pasos = const [],
     this.alumnoIds = const [],
     this.contingenciaIds = const [],
+    this.pictogramas = const [],
   });
 
   final String id;
@@ -30,12 +35,54 @@ class Tarea {
   final List<Paso> pasos;
   final List<String> alumnoIds; // "se asigna a"
   final List<String> contingenciaIds; // "prepara"
+  final List<Pictograma> pictogramas; // relación muchos a muchos (* a *)
 
   /// Pictograma de la tarea = el del último paso
   /// (si solo hay uno, es ese mismo).
   String? get pictogramaId => pasos.isEmpty ? null : pasos.last.pictogramaId;
 
-  factory Tarea.fromMap(String id, Map<String, dynamic> m) {
+  /// Obtiene los identificadores de todos los pictogramas asociados.
+  List<String> get pictogramaIds =>
+      pictogramas.map((p) => p.idPictograma).toList();
+
+  /// Crea una copia de esta tarea modificando únicamente los campos indicados.
+  Tarea copyWith({
+    String? id,
+    String? nombre,
+    String? descripcion,
+    DateTime? fecha,
+    String? horario,
+    DateTime? horaInicio,
+    DateTime? horaFinal,
+    String? aulaId,
+    String? creadaPor,
+    List<Paso>? pasos,
+    List<String>? alumnoIds,
+    List<String>? contingenciaIds,
+    List<Pictograma>? pictogramas,
+  }) {
+    return Tarea(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      fecha: fecha ?? this.fecha,
+      horario: horario ?? this.horario,
+      horaInicio: horaInicio ?? this.horaInicio,
+      horaFinal: horaFinal ?? this.horaFinal,
+      aulaId: aulaId ?? this.aulaId,
+      creadaPor: creadaPor ?? this.creadaPor,
+      pasos: pasos ?? this.pasos,
+      alumnoIds: alumnoIds ?? this.alumnoIds,
+      contingenciaIds: contingenciaIds ?? this.contingenciaIds,
+      pictogramas: pictogramas ?? this.pictogramas,
+    );
+  }
+
+  factory Tarea.fromMap(
+    String id,
+    Map<String, dynamic> m, {
+    List<Pictograma>? pictogramas,
+  }) {
     final pasos =
         (m['pasos'] as List<dynamic>? ?? [])
             .map(
@@ -44,23 +91,49 @@ class Tarea {
             .toList()
           ..sort((a, b) => a.orden.compareTo(b.orden));
 
+    final parsedPictogramas = pictogramas ??
+        (m['pictogramas'] as List<dynamic>?)
+            ?.map((item) => item is Map<String, dynamic>
+                ? Pictograma.fromMap(item, id: item['idPictograma'] as String?)
+                : Pictograma(
+                    idPictograma: item.toString(),
+                    nombre: '',
+                  ))
+            .toList() ??
+        const [];
+
     return Tarea(
       id: id,
       nombre: m['nombre'] ?? '',
       descripcion: m['descripcion'] ?? '',
-      fecha: (m['fecha'] as Timestamp).toDate(),
+      fecha: m['fecha'] is Timestamp
+          ? (m['fecha'] as Timestamp).toDate()
+          : (m['fecha'] is DateTime
+              ? m['fecha'] as DateTime
+              : DateTime.tryParse(m['fecha']?.toString() ?? '') ?? DateTime.now()),
       horario: m['horario'] ?? '',
-      horaInicio: (m['horaInicio'] as Timestamp).toDate(),
-      horaFinal: (m['horaFinal'] as Timestamp).toDate(),
+      horaInicio: m['horaInicio'] is Timestamp
+          ? (m['horaInicio'] as Timestamp).toDate()
+          : (m['horaInicio'] is DateTime
+              ? m['horaInicio'] as DateTime
+              : DateTime.tryParse(m['horaInicio']?.toString() ?? '') ?? DateTime.now()),
+      horaFinal: m['horaFinal'] is Timestamp
+          ? (m['horaFinal'] as Timestamp).toDate()
+          : (m['horaFinal'] is DateTime
+              ? m['horaFinal'] as DateTime
+              : DateTime.tryParse(m['horaFinal']?.toString() ?? '') ?? DateTime.now()),
       aulaId: m['aulaId'] ?? '',
       creadaPor: m['creadaPor'] ?? '',
       pasos: pasos,
       alumnoIds: List<String>.from(m['alumnoIds'] ?? []),
       contingenciaIds: List<String>.from(m['contingenciaIds'] ?? []),
+      pictogramas: parsedPictogramas,
     );
   }
 
-  Map<String, dynamic> toMap() => {
+  /// Convierte la entidad a un mapa compatible con JSON o Firebase.
+  /// [includePictogramas] permite evitar referencias circulares durante la serialización.
+  Map<String, dynamic> toMap({bool includePictogramas = false}) => {
     'nombre': nombre,
     'descripcion': descripcion,
     'fecha': Timestamp.fromDate(fecha),
@@ -72,5 +145,7 @@ class Tarea {
     'pasos': pasos.map((p) => p.toMap()).toList(),
     'alumnoIds': alumnoIds,
     'contingenciaIds': contingenciaIds,
+    if (includePictogramas)
+      'pictogramas': pictogramas.map((p) => p.toMap()).toList(),
   };
 }
