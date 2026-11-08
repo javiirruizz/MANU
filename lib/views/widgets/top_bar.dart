@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
+import '../../data/pictograma_repository.dart';
+import '../../models/pictograma.dart';
+import 'pictograma_selector_dialog.dart';
 
 /// Barra superior: logo, pestañas y accesos rápidos.
 class TopBar extends StatelessWidget {
@@ -54,6 +57,29 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 20),
+          _SquareButton(
+            icon: Icons.photo_library_outlined,
+            tooltip: 'Biblioteca de Pictogramas (HU 05)',
+            background: AppColors.badge,
+            color: AppColors.primary,
+            onTap: () async {
+              final seleccionado = await showDialog<Pictograma>(
+                context: context,
+                builder: (_) => PictogramaSelectorDialog(
+                  repository: PictogramaRepository(),
+                ),
+              );
+              if (seleccionado != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Pictograma seleccionado: ${seleccionado.nombre}'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
           const _SquareButton(
             icon: Icons.volume_up_outlined,
             tooltip: 'Voz',
@@ -110,12 +136,14 @@ class _SquareButton extends StatelessWidget {
     required this.tooltip,
     this.background = AppColors.tabTrack,
     this.color = AppColors.textDark,
+    this.onTap,
   });
 
   final IconData icon;
   final String tooltip;
   final Color background;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +154,7 @@ class _SquareButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {}, // TODO
+          onTap: onTap ?? () {},
           child: SizedBox(
             width: 46,
             height: 46,
