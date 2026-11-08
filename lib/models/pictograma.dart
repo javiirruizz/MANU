@@ -34,7 +34,7 @@ class Pictograma {
       'idPictograma': idPictograma,
       'nombre': nombre,
       if (includeMenus)
-        'menus': menus.map((m) => m.toMap(includePictogramas: false)).toList(),
+        'menus': menus.map((m) => m.toMap()).toList(),
     };
   }
 
@@ -50,10 +50,10 @@ class Pictograma {
       menus: menus ??
           (map['menus'] as List<dynamic>?)
               ?.map((item) => item is Map<String, dynamic>
-                  ? Menu.fromMap(item)
+                  ? Menu.fromMap(item['id'] as String? ?? '', item)
                   : Menu(
-                      idMenu: item.toString(),
-                      idComedor: '',
+                      id: item.toString(),
+                      comedorId: '',
                       platos: const [],
                       postre: '',
                       fecha: DateTime.now(),
