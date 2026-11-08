@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/usuario.dart';
 
-/// Excepción lanzada cuando un usuario intenta realizar una operación
-/// para la que su perfil no dispone de los permisos necesarios.
 class AccesoDenegadoException implements Exception {
   const AccesoDenegadoException(this.mensaje);
   final String mensaje;
@@ -17,7 +15,7 @@ class UsuarioRepository {
 
   final FirebaseFirestore? _db;
 
-  /// Usuarios iniciales pre-cargados para pruebas y demostración de roles.
+  // Usuarios de prueba
   static final List<Usuario> _usuariosIniciales = [
     Usuario(
       id: 'admin_1',
@@ -68,7 +66,6 @@ class UsuarioRepository {
 
   final List<Usuario> _usuariosLocales = List.of(_usuariosIniciales);
 
-  /// Sincroniza los usuarios iniciales en Firestore si la colección está vacía.
   Future<void> precargarUsuariosEnBD() async {
     final db = _db;
     if (db == null) return;
@@ -84,7 +81,7 @@ class UsuarioRepository {
     await batch.commit();
   }
 
-  /// Lista todos los usuarios registrados, permitiendo filtrar por rol.
+  // Lista todos los usuarios registrados y permite filtrar por rol.
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     final db = _db;
     if (db != null) {
@@ -106,7 +103,7 @@ class UsuarioRepository {
     return List.unmodifiable(_usuariosLocales);
   }
 
-  /// Obtiene un usuario específico por su identificador.
+  // Obtiene un usuario específico por su identificador.
   Future<Usuario?> obtenerUsuarioPorId(String id) async {
     final db = _db;
     if (db != null) {
@@ -123,8 +120,7 @@ class UsuarioRepository {
     }
   }
 
-  /// Verifica el control de accesos. Lanza [AccesoDenegadoException] si el
-  /// usuario no cuenta con el permiso requerido.
+  // Lanza AccesoDenegado si no tiene permiso
   void verificarAcceso({
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
@@ -139,7 +135,6 @@ class UsuarioRepository {
     }
   }
 
-  /// Comprueba si el usuario tiene permiso sin lanzar excepción.
   bool puedeEjecutarAccion({
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
@@ -167,7 +162,7 @@ class UsuarioRepository {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
-    // Salvaguarda: no permitir eliminar al único administrador del sistema
+    // No se puede quitar al único admin
     if (usuarioActual.rol == RolUsuario.administrador &&
         nuevoRol != RolUsuario.administrador) {
       final todos = await listarUsuarios();

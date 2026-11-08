@@ -3,7 +3,7 @@ import 'package:manu/data/usuario_repository.dart';
 import 'package:manu/models/usuario.dart';
 
 void main() {
-  group('HU 03 - Gestión de roles y permisos mediante control de accesos', () {
+  group('HU 03 - Roles y permisos', () {
     late UsuarioRepository repository;
     late Usuario admin;
     late Usuario profesor;
@@ -51,7 +51,7 @@ void main() {
     });
 
     test(
-      'Prueba de aceptación 1: Un administrador puede asignar y modificar el rol de un usuario y sus permisos se actualizan en consecuencia',
+      'un admin puede cambiar el rol de un usuario',
       () async {
         // Alumno inicialmente solo puede marcar tareas y gestionar tiempo libre
         expect(alumno.rol, RolUsuario.alumno);
@@ -77,7 +77,7 @@ void main() {
     );
 
     test(
-      'Prueba de aceptación 2: Un administrador puede conceder o revocar permisos específicos de forma granular a un usuario',
+      'un admin puede conceder o revocar permisos individuales',
       () async {
         // Inicialmente el profesor no gestiona pictogramas
         expect(
@@ -85,7 +85,7 @@ void main() {
           isFalse,
         );
 
-        // El administrador le concede explícitamente el permiso de gestionar pictogramas
+        // El administrador le concede el permiso de gestionar pictogramas
         final profesorConPermiso = await repository.concederPermiso(
           solicitante: admin,
           usuarioId: 'profe_1',
@@ -99,7 +99,7 @@ void main() {
           isTrue,
         );
 
-        // El administrador le revoca el permiso de gestionar el menú escolar
+        // El administrador le revoca el permiso del menú
         final profesorSinMenu = await repository.revocarPermiso(
           solicitante: admin,
           usuarioId: 'profe_1',
@@ -114,7 +114,7 @@ void main() {
     );
 
     test(
-      'Prueba de aceptación 3: Un usuario sin rol de administrador intenta modificar roles o permisos y el sistema bloquea la acción denegando el acceso',
+      'un usuario sin rol admin no puede modificar roles ni permisos',
       () async {
         // Un alumno intenta cambiarse el rol a administrador
         expect(
@@ -139,9 +139,9 @@ void main() {
     );
 
     test(
-      'Prueba de aceptación 4: Control de accesos en acciones del sistema para garantizar la privacidad y control por perfil',
+      'verificar acceso según el rol de cada usuario',
       () {
-        // Un administrador puede ejecutar cualquier acción
+        // Admin puede hacer cualquier cosa
         expect(
           () => repository.verificarAcceso(
             usuario: admin,
@@ -150,7 +150,7 @@ void main() {
           returnsNormally,
         );
 
-        // Un profesor tiene acceso a gestionar tareas, pero no a gestionar usuarios
+        // Profesor puede gestionar tareas pero no usuarios
         expect(
           () => repository.verificarAcceso(
             usuario: profesor,
@@ -166,7 +166,7 @@ void main() {
           throwsA(isA<AccesoDenegadoException>()),
         );
 
-        // Un familiar tiene acceso a autorizaciones, pero no a modificar el menú escolar
+        // Familiar puede autorizar pero no modificar menú
         expect(
           () => repository.verificarAcceso(
             usuario: familiar,
@@ -182,7 +182,7 @@ void main() {
           throwsA(isA<AccesoDenegadoException>()),
         );
 
-        // Un alumno tiene acceso a marcar tareas, pero no a ver el panel de seguimiento psicopedagógico
+        // Alumno puede marcar tareas pero no ver seguimiento
         expect(
           () => repository.verificarAcceso(
             usuario: alumno,
@@ -201,7 +201,7 @@ void main() {
     );
 
     test(
-      'Prueba de aceptación 5: Protección del sistema impidiendo retirar el rol al único administrador existente',
+      'no se puede quitar el rol al único administrador',
       () async {
         // Intentar cambiar el rol del único administrador debe ser bloqueado por seguridad
         expect(
@@ -216,7 +216,7 @@ void main() {
     );
 
     test(
-      'Retrocompatibilidad y serialización de permisos en Usuario',
+      'serialización y deserialización de permisos',
       () {
         // Usuario serializado a mapa incluye lista de permisos
         final map = profesor.toMap();
@@ -224,7 +224,7 @@ void main() {
         expect(map['permisos'], isA<List>());
         expect(map['permisos'], contains('gestionarTareas'));
 
-        // Deserialización sin campo permisos adopta los valores por defecto del rol
+        // Sin campo permisos en el mapa se usan los del rol
         final mapSinPermisos = {
           'nombre': 'Estudiante Nuevo',
           'dni': '11223344K',

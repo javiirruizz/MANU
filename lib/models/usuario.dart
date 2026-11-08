@@ -57,7 +57,7 @@ enum PermisoUsuario {
   final String nombre;
   final String descripcion;
 
-  /// Retorna el conjunto de permisos predeterminados para un rol.
+  // Permisos por defecto según el rol
   static Set<PermisoUsuario> permisosPorDefecto(RolUsuario rol) {
     switch (rol) {
       case RolUsuario.administrador:
@@ -112,18 +112,14 @@ class Usuario {
   final String preferenciaEnvios;
   final String? comedorId;
 
-  /// Permisos asignados al usuario. Si no se especificaron de forma manual,
-  /// se toman los permisos por defecto correspondientes a su rol.
+  // Si no se especificaron permisos, se usan los del rol
   Set<PermisoUsuario> get permisos =>
       _permisos != null
           ? Set.unmodifiable(_permisos)
           : PermisoUsuario.permisosPorDefecto(rol);
 
-  /// Indica si el usuario tiene rol de administrador.
   bool get esAdministrador => rol == RolUsuario.administrador;
 
-  /// Comprueba si el usuario tiene concedido un permiso específico.
-  /// Si es administrador, tiene acceso irrestricto de forma predeterminada.
   bool tienePermiso(PermisoUsuario permiso) {
     if (esAdministrador) return true;
     return permisos.contains(permiso);

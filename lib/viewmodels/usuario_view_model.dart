@@ -48,7 +48,6 @@ class UsuarioViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  /// Cambia el usuario que actúa como solicitante (para probar control de acceso).
   void cambiarSolicitante(Usuario nuevoSolicitante) {
     _solicitante = nuevoSolicitante;
     _mensajeError = null;
@@ -56,26 +55,22 @@ class UsuarioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Limpia los mensajes de estado.
   void limpiarMensajes() {
     _mensajeError = null;
     _mensajeExito = null;
     notifyListeners();
   }
 
-  /// Filtra usuarios por rol.
   void filtrarPorRol(RolUsuario? rol) {
     _filtroRol = rol;
     notifyListeners();
   }
 
-  /// Filtra usuarios por texto (nombre o DNI).
   void filtrarPorTexto(String texto) {
     _filtroTexto = texto;
     notifyListeners();
   }
 
-  /// Selecciona un usuario para gestionar sus roles y permisos.
   void seleccionarUsuario(Usuario? usuario) {
     _usuarioSeleccionado = usuario;
     _mensajeError = null;
@@ -83,7 +78,6 @@ class UsuarioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carga la lista de usuarios desde el repositorio.
   Future<void> cargarUsuarios() async {
     _cargando = true;
     _mensajeError = null;
@@ -107,7 +101,6 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
-  /// Cambia el rol de un usuario y actualiza sus permisos correspondientes.
   Future<bool> cambiarRol(String usuarioId, RolUsuario nuevoRol) async {
     _mensajeError = null;
     _mensajeExito = null;
@@ -140,7 +133,6 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
-  /// Concede o revoca un permiso específico a un usuario.
   Future<bool> togglePermiso(
     String usuarioId,
     PermisoUsuario permiso,
@@ -185,7 +177,6 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
-  /// Restablece los permisos del usuario a los valores predeterminados según su rol.
   Future<bool> restablecerPermisosPorDefecto(String usuarioId) async {
     _mensajeError = null;
     _mensajeExito = null;
