@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../data/pictograma_repository.dart';
-import '../../models/pictograma.dart';
 import '../../viewmodels/pictograma_view_model.dart';
 
 class PictogramaSelectorDialog extends StatefulWidget {
@@ -155,8 +154,9 @@ class _PictogramaSelectorDialogState extends State<PictogramaSelectorDialog> {
                                           Expanded(
                                             child: Image.network(
                                               p.urlResuelta,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const Icon(
+                                              errorBuilder:
+                                                  (context, error, stackTrace) =>
+                                                      const Icon(
                                                 Icons.image_outlined,
                                                 size: 48,
                                               ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 import '../../data/pictograma_repository.dart';
+import '../../data/usuario_repository.dart';
 import '../../models/pictograma.dart';
+import 'gestion_roles_dialog.dart';
 import 'pictograma_selector_dialog.dart';
 
 /// Barra superior: logo, pestañas y accesos rápidos.
@@ -57,6 +59,21 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 20),
+          _SquareButton(
+            icon: Icons.admin_panel_settings_outlined,
+            tooltip: 'Gestión de Roles y Permisos (HU 03)',
+            background: AppColors.tabTrack,
+            color: AppColors.primary,
+            onTap: () async {
+              await showDialog(
+                context: context,
+                builder: (_) => GestionRolesDialog(
+                  repository: UsuarioRepository(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
           _SquareButton(
             icon: Icons.photo_library_outlined,
             tooltip: 'Biblioteca de Pictogramas (HU 05)',
