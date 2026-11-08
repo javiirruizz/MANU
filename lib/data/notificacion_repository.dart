@@ -1,3 +1,5 @@
+import '../models/notificacion.dart';
+
 class NotificacionService {
   
   // Método para guardar la notificación en Firebase cuando el profesor la crea
