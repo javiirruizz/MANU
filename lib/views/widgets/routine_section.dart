@@ -88,16 +88,51 @@ class _TaskTile extends StatelessWidget {
                       // NUEVO: Renderizado de la imagen adjunta (HU 08.1)
                       if (task.imageUrl != null && task.imageUrl!.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            task.imageUrl!,
-                            height: 100, // Tamaño base, en la HU 18 lo haremos ampliable
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => 
-                                const Text('Error al cargar la imagen', style: TextStyle(color: Colors.red)),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => Dialog(
+                                backgroundColor: Colors.transparent, // Fondo invisible
+                                insetPadding: const EdgeInsets.all(10), // Máximo tamaño posible
+                                child: InteractiveViewer( // Permite hacer zoom con los dedos
+                                  child: Image.network(task.imageUrl!),
+                                ),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              task.imageUrl!,
+                              height: 100,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                           ),
+                        ),
+
+                        // 2. Justo debajo del GestureDetector de la imagen, añade los botones de audio:
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.record_voice_over, color: AppColors.primary),
+                              onPressed: () {
+                                // Aquí llamaremos a la función del ViewModel
+                                context.read<AgendaViewModel>().readAloud("${task.title}. ${task.subtitle}");
+                              },
+                              tooltip: 'Leer instrucciones',
+                            ),
+                            if (task.audioUrl != null && task.audioUrl!.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.play_circle_fill, color: AppColors.primary),
+                                onPressed: () {
+                                  context.read<AgendaViewModel>().playTaskAudio(task.audioUrl!);
+                                },
+                                tooltip: 'Reproducir grabación',
+                              ),
+                          ],
                         ),
                       ]
                     ],
