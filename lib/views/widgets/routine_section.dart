@@ -74,6 +74,7 @@ class _TaskTile extends StatelessWidget {
                   child: Icon(task.icon, color: task.iconColor, size: 22),
                 ),
                 const SizedBox(width: 12),
+                // Dentro de la clase _TaskTile, en el método build...
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,6 +84,22 @@ class _TaskTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(task.subtitle,
                           style: const TextStyle(fontSize: 12, color: AppColors.textSoft)),
+                      
+                      // NUEVO: Renderizado de la imagen adjunta (HU 08.1)
+                      if (task.imageUrl != null && task.imageUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            task.imageUrl!,
+                            height: 100, // Tamaño base, en la HU 18 lo haremos ampliable
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => 
+                                const Text('Error al cargar la imagen', style: TextStyle(color: Colors.red)),
+                          ),
+                        ),
+                      ]
                     ],
                   ),
                 ),

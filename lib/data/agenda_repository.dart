@@ -20,7 +20,7 @@ class AgendaRepository {
           icon: Icons.groups_outlined,
           iconColor: AppColors.primary,
           iconBackground: AppColors.badge,
-          completed: true,
+          imageUrl: 'https://picsum.photos/400/200',
         ),
         RoutineTask(
           id: '2',
