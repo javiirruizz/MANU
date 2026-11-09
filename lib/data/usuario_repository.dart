@@ -282,3 +282,77 @@ class UsuarioRepository {
     );
   }
 }
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../models/usuario.dart';
+
+/// Repositorio general encargado de la gestión de Usuarios en Cloud Firestore.
+///
+/// Este archivo es reutilizable por TODA la aplicación (Comedor, Notificaciones,
+/// Agenda, Tareas, etc.), ya que centraliza cualquier operación sobre la colección 'usuarios'.
+class UsuarioRepository {
+  /// Instancia de la base de datos de Cloud Firestore.
+  final FirebaseFirestore _db;
+
+  /// Constructor con soporte para inyección de dependencias (útil para tests unitarios).
+  UsuarioRepository({FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
+
+  // ===========================================================================
+  // 1. CONSULTAS DE ALUMNOS (REUTILIZABLES)
+  // ===========================================================================
+
+  /// Obtiene la lista de todos los usuarios registrados con el rol de 'alumno'.
+  ///
+  /// Cualquier funcionalidad que necesite listar alumnos (p. ej. el gestor de tareas,
+  /// el comedor escolar o el pase de lista) debe llamar a este método.
+  Future<List<Usuario>> getAlumnos() async {
+    final snapshot = await _db
+        .collection('usuarios')
+        .where('rol', isEqualTo: RolUsuario.alumno.name)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Usuario.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  /// Escucha en tiempo real (Stream) la lista de alumnos.
+  ///
+  /// Si se matricula o da de alta un nuevo alumno en el sistema, cualquier pantalla
+  /// suscrita a este Stream se actualizará automáticamente.
+  Stream<List<Usuario>> streamAlumnos() {
+    return _db
+        .collection('usuarios')
+        .where('rol', isEqualTo: RolUsuario.alumno.name)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Usuario.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  // ===========================================================================
+  // 2. OTRAS CONSULTAS DE USUARIOS GENERALES
+  // ===========================================================================
+
+  /// Obtiene un usuario específico a partir de su identificador único [id].
+  ///
+  /// Retorna `null` si el usuario no existe en la base de datos.
+  Future<Usuario?> getUsuarioPorId(String id) async {
+    final doc = await _db.collection('usuarios').doc(id).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return Usuario.fromMap(doc.id, doc.data()!);
+  }
+
+  /// Obtiene la lista de todos los profesores registrados en el centro.
+  Future<List<Usuario>> getProfesores() async {
+    final snapshot = await _db
+        .collection('usuarios')
+        .where('rol', isEqualTo: RolUsuario.profesor.name)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Usuario.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+}
