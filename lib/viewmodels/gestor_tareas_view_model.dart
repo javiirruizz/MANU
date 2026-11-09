@@ -29,7 +29,7 @@ class GestorTareasViewModel extends ChangeNotifier {
   Future<void> cargarDatos() async {
     _actualizarIUCargando();
 
-    final resultados = await Future.wait([
+    final resultados = await Future.wait<dynamic>([
       _usuarioRepo.getAlumnos(),
       _tareaRepo.getTareasPorFecha(_fechaSeleccionada),
     ]);

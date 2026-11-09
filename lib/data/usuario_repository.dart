@@ -85,14 +85,14 @@ class UsuarioRepository {
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     final db = _db;
     if (db != null) {
-      Query<Map<String, dynamic>> query = db.collection('usuarios');
+      Query query = db.collection('usuarios');
       if (filtroRol != null) {
         query = query.where('rol', isEqualTo: filtroRol.name);
       }
       final snap = await query.get();
       if (snap.docs.isNotEmpty) {
         return snap.docs
-            .map((doc) => Usuario.fromMap(doc.id, doc.data()))
+            .map((doc) => Usuario.fromMap(doc.id, doc.data() as Map<String, dynamic>))
             .toList();
       }
     }
@@ -101,6 +101,27 @@ class UsuarioRepository {
       return _usuariosLocales.where((u) => u.rol == filtroRol).toList();
     }
     return List.unmodifiable(_usuariosLocales);
+  }
+
+  // Métodos de alumnos y profesores
+  Future<List<Usuario>> getAlumnos() async {
+    return listarUsuarios(filtroRol: RolUsuario.alumno);
+  }
+
+  Future<List<Usuario>> getProfesores() async {
+    return listarUsuarios(filtroRol: RolUsuario.profesor);
+  }
+
+  Stream<List<Usuario>> streamAlumnos() {
+    final db = _db;
+    if (db == null) return const Stream.empty();
+    return db
+        .collection('usuarios')
+        .where('rol', isEqualTo: RolUsuario.alumno.name)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Usuario.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+            .toList());
   }
 
   // Obtiene un usuario específico por su identificador.
@@ -119,6 +140,8 @@ class UsuarioRepository {
       return null;
     }
   }
+
+  Future<Usuario?> getUsuarioPorId(String id) => obtenerUsuarioPorId(id);
 
   // Lanza AccesoDenegado si no tiene permiso
   void verificarAcceso({
@@ -143,14 +166,12 @@ class UsuarioRepository {
   }
 
   /// Modifica el rol de un usuario existente.
-  /// Requiere que [solicitante] tenga permiso de gestión de roles y permisos.
   Future<Usuario> cambiarRol({
     required Usuario solicitante,
     required String usuarioId,
     required RolUsuario nuevoRol,
     bool resetearPermisos = true,
   }) async {
-    // Control de acceso para administradores
     verificarAcceso(
       usuario: solicitante,
       permisoRequerido: PermisoUsuario.gestionarRolesYPermisos,
@@ -162,7 +183,6 @@ class UsuarioRepository {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
-    // No se puede quitar al único admin
     if (usuarioActual.rol == RolUsuario.administrador &&
         nuevoRol != RolUsuario.administrador) {
       final todos = await listarUsuarios();
@@ -184,7 +204,6 @@ class UsuarioRepository {
       permisos: nuevosPermisos,
     );
 
-    // Actualizar en almacenamiento local en memoria
     final index = _usuariosLocales.indexWhere((u) => u.id == usuarioId);
     if (index != -1) {
       _usuariosLocales[index] = usuarioActualizado;
@@ -192,7 +211,6 @@ class UsuarioRepository {
       _usuariosLocales.add(usuarioActualizado);
     }
 
-    // Actualizar en Firestore si está conectado
     final db = _db;
     if (db != null) {
       await db
@@ -205,7 +223,6 @@ class UsuarioRepository {
   }
 
   /// Modifica de forma granular el conjunto de permisos de un usuario.
-  /// Requiere que [solicitante] tenga permiso de gestión de roles y permisos.
   Future<Usuario> actualizarPermisos({
     required Usuario solicitante,
     required String usuarioId,
@@ -280,79 +297,5 @@ class UsuarioRepository {
       usuarioId: usuarioId,
       nuevosPermisos: nuevos,
     );
-  }
-}
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../models/usuario.dart';
-
-/// Repositorio general encargado de la gestión de Usuarios en Cloud Firestore.
-///
-/// Este archivo es reutilizable por TODA la aplicación (Comedor, Notificaciones,
-/// Agenda, Tareas, etc.), ya que centraliza cualquier operación sobre la colección 'usuarios'.
-class UsuarioRepository {
-  /// Instancia de la base de datos de Cloud Firestore.
-  final FirebaseFirestore _db;
-
-  /// Constructor con soporte para inyección de dependencias (útil para tests unitarios).
-  UsuarioRepository({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
-
-  // ===========================================================================
-  // 1. CONSULTAS DE ALUMNOS (REUTILIZABLES)
-  // ===========================================================================
-
-  /// Obtiene la lista de todos los usuarios registrados con el rol de 'alumno'.
-  ///
-  /// Cualquier funcionalidad que necesite listar alumnos (p. ej. el gestor de tareas,
-  /// el comedor escolar o el pase de lista) debe llamar a este método.
-  Future<List<Usuario>> getAlumnos() async {
-    final snapshot = await _db
-        .collection('usuarios')
-        .where('rol', isEqualTo: RolUsuario.alumno.name)
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Usuario.fromMap(doc.id, doc.data()))
-        .toList();
-  }
-
-  /// Escucha en tiempo real (Stream) la lista de alumnos.
-  ///
-  /// Si se matricula o da de alta un nuevo alumno en el sistema, cualquier pantalla
-  /// suscrita a este Stream se actualizará automáticamente.
-  Stream<List<Usuario>> streamAlumnos() {
-    return _db
-        .collection('usuarios')
-        .where('rol', isEqualTo: RolUsuario.alumno.name)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Usuario.fromMap(doc.id, doc.data()))
-            .toList());
-  }
-
-  // ===========================================================================
-  // 2. OTRAS CONSULTAS DE USUARIOS GENERALES
-  // ===========================================================================
-
-  /// Obtiene un usuario específico a partir de su identificador único [id].
-  ///
-  /// Retorna `null` si el usuario no existe en la base de datos.
-  Future<Usuario?> getUsuarioPorId(String id) async {
-    final doc = await _db.collection('usuarios').doc(id).get();
-    if (!doc.exists || doc.data() == null) return null;
-    return Usuario.fromMap(doc.id, doc.data()!);
-  }
-
-  /// Obtiene la lista de todos los profesores registrados en el centro.
-  Future<List<Usuario>> getProfesores() async {
-    final snapshot = await _db
-        .collection('usuarios')
-        .where('rol', isEqualTo: RolUsuario.profesor.name)
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Usuario.fromMap(doc.id, doc.data()))
-        .toList();
   }
 }
