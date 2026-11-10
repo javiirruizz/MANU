@@ -3,12 +3,14 @@ import '../data/agenda_repository.dart';
 import '../models/meal_item.dart';
 import '../models/mood_option.dart';
 import '../models/routine_task.dart';
+import '../data/audio_service.dart';
 
 enum AgendaPeriod { morning, afternoon }
 
 /// Estado y lógica de la pantalla "Día a día".
 /// La vista solo lee de aquí y llama a sus métodos; no tiene lógica propia.
 class AgendaViewModel extends ChangeNotifier {
+  final AudioService _audioService = AudioService();
   AgendaViewModel(AgendaRepository repository, {DateTime? today})
       : _today = today ?? DateTime.now(),
         _tasks = repository.getTasks(),
@@ -97,8 +99,19 @@ class AgendaViewModel extends ChangeNotifier {
     _dayCompleted = true;
     notifyListeners();
   }
-
-  void readAloud() {
+  /*
+  Para que los audios finales alojados en Firebase suenen en la versión web de la agenda, 
+  la persona encargada de Firebase tendrá que configurar las "Reglas CORS" en la consola 
+  de Google Cloud. Es un paso estándar y obligatorio siempre que se usa audioplayers con 
+  Firebase en Flutter Web.
+  */
+  void readAloud([String? text]) {
     // TODO: leer la pantalla en voz alta (paquete flutter_tts).
+    final textoALeer = text ?? 'Rutina del día. Tienes ${totalCount - completedCount} tareas pendientes.';
+    _audioService.leerTexto(textoALeer);
+  }
+  
+  void playTaskAudio(String url) {
+    _audioService.reproducirAudio(url);
   }
 }

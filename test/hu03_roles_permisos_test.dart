@@ -15,6 +15,7 @@ void main() {
 
       admin = Usuario(
         id: 'admin_1',
+        nombreUsuario: 'admin',
         nombre: 'Usuario Administrador',
         dni: '00000001A',
         telefonoContacto: '600000001',
@@ -24,6 +25,7 @@ void main() {
 
       profesor = Usuario(
         id: 'profe_1',
+        nombreUsuario: 'profesor',
         nombre: 'Usuario Profesor',
         dni: '00000002B',
         telefonoContacto: '600000002',
@@ -33,6 +35,7 @@ void main() {
 
       alumno = Usuario(
         id: 'alum_1',
+        nombreUsuario: 'alumno1',
         nombre: 'Usuario Alumno 1',
         dni: '00000004D',
         telefonoContacto: '600000004',
@@ -42,6 +45,7 @@ void main() {
 
       familiar = Usuario(
         id: 'fam_1',
+        nombreUsuario: 'familiar',
         nombre: 'Usuario Familiar',
         dni: '00000003C',
         telefonoContacto: '600000003',

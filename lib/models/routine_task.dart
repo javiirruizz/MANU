@@ -11,6 +11,8 @@ class RoutineTask {
     required this.iconColor,
     required this.iconBackground,
     this.completed = false,
+    this.imageUrl,
+    this.audioUrl,
   });
 
   final String id;
@@ -21,6 +23,8 @@ class RoutineTask {
   final Color iconColor;
   final Color iconBackground;
   final bool completed;
+  final String? imageUrl;
+  final String? audioUrl;
 
   RoutineTask copyWith({bool? completed}) => RoutineTask(
         id: id,
@@ -31,5 +35,7 @@ class RoutineTask {
         iconColor: iconColor,
         iconBackground: iconBackground,
         completed: completed ?? this.completed,
+        imageUrl: imageUrl ?? this.imageUrl,
+        audioUrl: audioUrl ?? this.audioUrl,
       );
 }

@@ -10,31 +10,38 @@ enum PermisoUsuario {
   ),
   gestionarRolesYPermisos(
     nombre: 'Gestión de roles y permisos',
-    descripcion: 'Control de accesos, asignación de perfiles y permisos en el sistema.',
+    descripcion:
+        'Control de accesos, asignación de perfiles y permisos en el sistema.',
   ),
   gestionarAulas(
     nombre: 'Gestión de aulas',
-    descripcion: 'Asignación de alumnos a aulas y organización de espacios escolares.',
+    descripcion:
+        'Asignación de alumnos a aulas y organización de espacios escolares.',
   ),
   gestionarPictogramas(
     nombre: 'Gestión de pictogramas',
-    descripcion: 'Subir, catalogar y organizar la biblioteca de imágenes y apoyos visuales.',
+    descripcion:
+        'Subir, catalogar y organizar la biblioteca de imágenes y apoyos visuales.',
   ),
   gestionarTareas(
     nombre: 'Planificación de tareas',
-    descripcion: 'Crear, programar y asignar tareas escolares individuales o grupales.',
+    descripcion:
+        'Crear, programar y asignar tareas escolares individuales o grupales.',
   ),
   gestionarMenu(
     nombre: 'Gestión del menú escolar',
-    descripcion: 'Publicar, actualizar y consultar los menús del comedor escolar.',
+    descripcion:
+        'Publicar, actualizar y consultar los menús del comedor escolar.',
   ),
   verSeguimiento(
     nombre: 'Panel de seguimiento',
-    descripcion: 'Consultar progreso académico, historial de emociones e incidencias.',
+    descripcion:
+        'Consultar progreso académico, historial de emociones e incidencias.',
   ),
   gestionarPlanesB(
     nombre: 'Gestión de Planes B',
-    descripcion: 'Configurar incidencias logísticas y alternativas ante imprevistos.',
+    descripcion:
+        'Configurar incidencias logísticas y alternativas ante imprevistos.',
   ),
   marcarTareas(
     nombre: 'Progreso y cierre de tareas',
@@ -42,17 +49,16 @@ enum PermisoUsuario {
   ),
   gestionarTiempoLibre(
     nombre: 'Mi tiempo libre',
-    descripcion: 'Gestionar actividades de ocio, galería fotográfica y red de amigos.',
+    descripcion:
+        'Gestionar actividades de ocio, galería fotográfica y red de amigos.',
   ),
   autorizarActividades(
     nombre: 'Autorizaciones y consentimientos',
-    descripcion: 'Firma de autorizaciones de ocio y consentimientos RGPD/LOPDGDD.',
+    descripcion:
+        'Firma de autorizaciones de ocio y consentimientos RGPD/LOPDGDD.',
   );
 
-  const PermisoUsuario({
-    required this.nombre,
-    required this.descripcion,
-  });
+  const PermisoUsuario({required this.nombre, required this.descripcion});
 
   final String nombre;
   final String descripcion;
@@ -88,35 +94,38 @@ enum PermisoUsuario {
 class Usuario {
   const Usuario({
     required this.id,
+    required this.nombreUsuario,
     required this.nombre,
-    required this.dni,
-    required this.telefonoContacto,
-    required this.fechaNacimiento,
     required this.rol,
+    this.dni,
+    this.telefonoContacto,
+    this.fechaNacimiento,
     Set<PermisoUsuario>? permisos,
     this.puedeEditarPerfil = false,
     this.preferenciaVisualizacion = '',
     this.preferenciaEnvios = '',
     this.comedorId,
+    this.debeCambiarPassword = false,
   }) : _permisos = permisos;
 
   final String id;
+  final String nombreUsuario;
   final String nombre;
-  final String dni;
-  final String telefonoContacto;
-  final DateTime fechaNacimiento;
   final RolUsuario rol;
+  final String? dni;
+  final String? telefonoContacto;
+  final DateTime? fechaNacimiento;
   final Set<PermisoUsuario>? _permisos;
   final bool puedeEditarPerfil;
   final String preferenciaVisualizacion;
   final String preferenciaEnvios;
   final String? comedorId;
+  final bool debeCambiarPassword;
 
   // Si no se especificaron permisos, se usan los del rol
-  Set<PermisoUsuario> get permisos =>
-      _permisos != null
-          ? Set.unmodifiable(_permisos)
-          : PermisoUsuario.permisosPorDefecto(rol);
+  Set<PermisoUsuario> get permisos => _permisos != null
+      ? Set.unmodifiable(_permisos)
+      : PermisoUsuario.permisosPorDefecto(rol);
 
   bool get esAdministrador => rol == RolUsuario.administrador;
 
@@ -125,18 +134,18 @@ class Usuario {
     return permisos.contains(permiso);
   }
 
-  int get edad {
+  int? get edad {
+    final f = fechaNacimiento;
+    if (f == null) return null;
     final hoy = DateTime.now();
-    var e = hoy.year - fechaNacimiento.year;
-    if (hoy.month < fechaNacimiento.month ||
-        (hoy.month == fechaNacimiento.month && hoy.day < fechaNacimiento.day)) {
-      e--;
-    }
+    var e = hoy.year - f.year;
+    if (hoy.month < f.month || (hoy.month == f.month && hoy.day < f.day)) e--;
     return e;
   }
 
   Usuario copyWith({
     String? id,
+    String? nombreUsuario,
     String? nombre,
     String? dni,
     String? telefonoContacto,
@@ -147,9 +156,11 @@ class Usuario {
     String? preferenciaVisualizacion,
     String? preferenciaEnvios,
     String? comedorId,
+    bool? debeCambiarPassword,
   }) {
     return Usuario(
       id: id ?? this.id,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
       nombre: nombre ?? this.nombre,
       dni: dni ?? this.dni,
       telefonoContacto: telefonoContacto ?? this.telefonoContacto,
@@ -161,15 +172,16 @@ class Usuario {
           preferenciaVisualizacion ?? this.preferenciaVisualizacion,
       preferenciaEnvios: preferenciaEnvios ?? this.preferenciaEnvios,
       comedorId: comedorId ?? this.comedorId,
+      debeCambiarPassword: debeCambiarPassword ?? this.debeCambiarPassword,
     );
   }
 
   factory Usuario.fromMap(String id, Map<String, dynamic> m) {
-    DateTime parseFecha(dynamic val) {
+    DateTime? parseFecha(dynamic val) {
       if (val is Timestamp) return val.toDate();
       if (val is DateTime) return val;
-      if (val is String) return DateTime.tryParse(val) ?? DateTime(2000, 1, 1);
-      return DateTime(2000, 1, 1);
+      if (val is String) return DateTime.tryParse(val);
+      return null;
     }
 
     final rol = RolUsuario.values.byName(m['rol'] ?? 'alumno');
@@ -190,9 +202,10 @@ class Usuario {
 
     return Usuario(
       id: id,
+      nombreUsuario: m['nombreUsuario'] ?? '',
       nombre: m['nombre'] ?? '',
-      dni: m['dni'] ?? '',
-      telefonoContacto: m['telefonoContacto'] ?? '',
+      dni: m['dni'],
+      telefonoContacto: m['telefonoContacto'],
       fechaNacimiento: parseFecha(m['fechaNacimiento']),
       rol: rol,
       permisos: permisos,
@@ -200,19 +213,24 @@ class Usuario {
       preferenciaVisualizacion: m['preferenciaVisualizacion'] ?? '',
       preferenciaEnvios: m['preferenciaEnvios'] ?? '',
       comedorId: m['comedorId'],
+      debeCambiarPassword: m['debeCambiarPassword'] ?? false,
     );
   }
 
   Map<String, dynamic> toMap() => {
+    'nombreUsuario': nombreUsuario,
     'nombre': nombre,
     'dni': dni,
     'telefonoContacto': telefonoContacto,
-    'fechaNacimiento': Timestamp.fromDate(fechaNacimiento),
+    'fechaNacimiento': fechaNacimiento == null
+        ? null
+        : Timestamp.fromDate(fechaNacimiento!),
     'rol': rol.name,
     'permisos': permisos.map((p) => p.name).toList(),
     'puedeEditarPerfil': puedeEditarPerfil,
     'preferenciaVisualizacion': preferenciaVisualizacion,
     'preferenciaEnvios': preferenciaEnvios,
     'comedorId': comedorId,
+    'debeCambiarPassword': debeCambiarPassword,
   };
 }

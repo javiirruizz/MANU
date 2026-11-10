@@ -20,7 +20,10 @@ class AgendaRepository {
           icon: Icons.groups_outlined,
           iconColor: AppColors.primary,
           iconBackground: AppColors.badge,
-          completed: true,
+          // Imagen de ejemplo
+          imageUrl: 'https://picsum.photos/400/200',
+          // Audio de ejemplo
+          //audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
         ),
         RoutineTask(
           id: '2',

@@ -21,6 +21,8 @@ class Tarea {
     this.alumnoIds = const [],
     this.contingenciaIds = const [],
     this.pictogramas = const [],
+    this.imagenAdjuntaUrl,
+    this.audioUrl,
   });
 
   final String id;
@@ -36,7 +38,8 @@ class Tarea {
   final List<String> alumnoIds; // "se asigna a"
   final List<String> contingenciaIds; // "prepara"
   final List<Pictograma> pictogramas; // relación muchos a muchos (* a *)
-
+  final String? imagenAdjuntaUrl;
+  final String? audioUrl;
   /// Pictograma de la tarea = el del último paso
   /// (si solo hay uno, es ese mismo).
   String? get pictogramaId => pasos.isEmpty ? null : pasos.last.pictogramaId;
@@ -60,6 +63,8 @@ class Tarea {
     List<String>? alumnoIds,
     List<String>? contingenciaIds,
     List<Pictograma>? pictogramas,
+    String? imagenAdjuntaUrl,
+    String? audioUrl,
   }) {
     return Tarea(
       id: id ?? this.id,
@@ -75,6 +80,8 @@ class Tarea {
       alumnoIds: alumnoIds ?? this.alumnoIds,
       contingenciaIds: contingenciaIds ?? this.contingenciaIds,
       pictogramas: pictogramas ?? this.pictogramas,
+      imagenAdjuntaUrl: imagenAdjuntaUrl ?? this.imagenAdjuntaUrl,
+      audioUrl: audioUrl ?? this.audioUrl,
     );
   }
 
@@ -128,6 +135,8 @@ class Tarea {
       alumnoIds: List<String>.from(m['alumnoIds'] ?? []),
       contingenciaIds: List<String>.from(m['contingenciaIds'] ?? []),
       pictogramas: parsedPictogramas,
+      imagenAdjuntaUrl: m['imagenAdjuntaUrl'] as String?,
+      audioUrl: m['audioUrl'] as String?,
     );
   }
 
@@ -147,5 +156,11 @@ class Tarea {
     'contingenciaIds': contingenciaIds,
     if (includePictogramas)
       'pictogramas': pictogramas.map((p) => p.toMap()).toList(),
+
+    if (imagenAdjuntaUrl != null)
+      'imagenAdjuntaUrl': imagenAdjuntaUrl,
+
+    if (audioUrl != null)
+      'audioUrl': audioUrl,
   };
 }

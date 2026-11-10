@@ -5,6 +5,8 @@ import '../../data/usuario_repository.dart';
 import '../../models/pictograma.dart';
 import 'gestion_roles_dialog.dart';
 import 'pictograma_selector_dialog.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/auth_view_model.dart';
 
 /// Barra superior: logo, pestañas y accesos rápidos.
 class TopBar extends StatelessWidget {
@@ -12,7 +14,12 @@ class TopBar extends StatelessWidget {
 
   final int selectedIndex;
 
-  static const _tabs = ['Día a día', 'Mes y festivos', 'Fin de semana', 'Mis datos'];
+  static const _tabs = [
+    'Día a día',
+    'Mes y festivos',
+    'Fin de semana',
+    'Mis datos',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +60,12 @@ class TopBar extends StatelessWidget {
               child: Row(
                 children: [
                   for (var i = 0; i < _tabs.length; i++)
-                    Expanded(child: _TabItem(label: _tabs[i], selected: i == selectedIndex)),
+                    Expanded(
+                      child: _TabItem(
+                        label: _tabs[i],
+                        selected: i == selectedIndex,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -65,10 +77,13 @@ class TopBar extends StatelessWidget {
             background: AppColors.tabTrack,
             color: AppColors.primary,
             onTap: () async {
+              final usuario = context.read<AuthViewModel>().usuario;
+              if (usuario == null) return;
               await showDialog(
                 context: context,
                 builder: (_) => GestionRolesDialog(
                   repository: UsuarioRepository(),
+                  solicitante: usuario,
                 ),
               );
             },
@@ -89,7 +104,9 @@ class TopBar extends StatelessWidget {
               if (seleccionado != null && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Pictograma seleccionado: ${seleccionado.nombre}'),
+                    content: Text(
+                      'Pictograma seleccionado: ${seleccionado.nombre}',
+                    ),
                     backgroundColor: AppColors.primary,
                   ),
                 );
@@ -104,7 +121,10 @@ class TopBar extends StatelessWidget {
             color: AppColors.greenDark,
           ),
           const SizedBox(width: 8),
-          const _SquareButton(icon: Icons.settings_outlined, tooltip: 'Ajustes'),
+          const _SquareButton(
+            icon: Icons.settings_outlined,
+            tooltip: 'Ajustes',
+          ),
           const SizedBox(width: 8),
           const _SquareButton(icon: Icons.person_outline, tooltip: 'Perfil'),
         ],
