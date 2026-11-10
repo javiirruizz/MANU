@@ -35,6 +35,9 @@ class UsuarioRepository {
 
   final FirebaseFirestore _db;
 
+  Future<List<Usuario>> getAlumnos() =>
+      listarUsuarios(filtroRol: RolUsuario.alumno);
+
   // Lista todos los usuarios y permite filtrar por rol.
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     Query<Map<String, dynamic>> query = _db.collection('usuarios');

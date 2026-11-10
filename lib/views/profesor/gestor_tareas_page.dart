@@ -32,7 +32,8 @@ class GestorTareasPage extends StatefulWidget {
     Tarea nuevaTarea,
     TipoAsignacion tipo,
     FrecuenciaRecurrencia? recurrencia,
-  )? onGuardarTarea;
+  )?
+  onGuardarTarea;
   final Future<void> Function(Tarea tareaActualizada)? onActualizarTarea;
   final Future<void> Function(String tareaId)? onEliminarTarea;
   final Future<void> Function(DateTime nuevaFecha)? onFechaCambiada;
@@ -51,7 +52,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     super.initState();
     _fechaSeleccionada = widget.fechaSeleccionada;
   }
-  
+
   String? _filtroAlumnoId;
   String? _filtroAula;
   final _filtroAulaCtrl = TextEditingController();
@@ -145,26 +146,29 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       TipoAsignacion.individual =>
         _alumnoSeleccionadoId != null ? [_alumnoSeleccionadoId!] : [],
       TipoAsignacion.grupal ||
-      TipoAsignacion.recurrente =>
-        _alumnosGrupalesIds.toList(),
+      TipoAsignacion.recurrente => _alumnosGrupalesIds.toList(),
     };
 
     if (alumnosAfectados.isEmpty) return [];
 
-    final tareasDelDia = widget.tareas.where((t) =>
-        t.id != _tareaEnEdicion?.id &&
-        t.fecha.year == _fechaSeleccionada.year &&
-        t.fecha.month == _fechaSeleccionada.month &&
-        t.fecha.day == _fechaSeleccionada.day);
+    final tareasDelDia = widget.tareas.where(
+      (t) =>
+          t.id != _tareaEnEdicion?.id &&
+          t.fecha.year == _fechaSeleccionada.year &&
+          t.fecha.month == _fechaSeleccionada.month &&
+          t.fecha.day == _fechaSeleccionada.day,
+    );
 
     final List<Tarea> enConflicto = [];
 
     for (final tarea in tareasDelDia) {
-      final comparteAlumno =
-          tarea.alumnoIds.any((id) => alumnosAfectados.contains(id));
+      final comparteAlumno = tarea.alumnoIds.any(
+        (id) => alumnosAfectados.contains(id),
+      );
       if (!comparteAlumno) continue;
 
-      final solapa = nuevaInicio.isBefore(tarea.horaFinal) &&
+      final solapa =
+          nuevaInicio.isBefore(tarea.horaFinal) &&
           nuevaFin.isAfter(tarea.horaInicio);
       if (solapa) {
         enConflicto.add(tarea);
@@ -185,35 +189,41 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
         elevation: 0,
         title: const Text(
           'Planificador y Asignación de Tareas',
-          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-              icon: const Icon(Icons.calendar_today_outlined, color: AppColors.primary),
-              tooltip: 'Cambiar fecha',
-              onPressed: _seleccionarFecha,
+            icon: const Icon(
+              Icons.calendar_today_outlined,
+              color: AppColors.primary,
+            ),
+            tooltip: 'Cambiar fecha',
+            onPressed: _seleccionarFecha,
           ),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Text(
                 '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
-                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textDark),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
               ),
             ),
           ),
         ],
-    ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 5,
-                child: _buildCronogramaPanel(),
-              ),
+              Expanded(flex: 5, child: _buildCronogramaPanel()),
               const SizedBox(width: 16),
               Expanded(
                 flex: 6,
@@ -227,278 +237,331 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   Widget _buildCronogramaPanel() {
-  final textoFiltroAula = _filtroAulaCtrl.text.trim().toLowerCase();
+    final textoFiltroAula = _filtroAulaCtrl.text.trim().toLowerCase();
 
-  // Filtrado de tareas (Fecha + Alumno + Texto de Aula/Lugar)
-  final tareasDelDia = widget.tareas.where((t) {
-    final mismaFecha = t.fecha.year == _fechaSeleccionada.year &&
-        t.fecha.month == _fechaSeleccionada.month &&
-        t.fecha.day == _fechaSeleccionada.day;
-    if (!mismaFecha) return false;
+    // Filtrado de tareas (Fecha + Alumno + Texto de Aula/Lugar)
+    final tareasDelDia = widget.tareas.where((t) {
+      final mismaFecha =
+          t.fecha.year == _fechaSeleccionada.year &&
+          t.fecha.month == _fechaSeleccionada.month &&
+          t.fecha.day == _fechaSeleccionada.day;
+      if (!mismaFecha) return false;
 
-    // Filtro por Alumno
-    if (_filtroAlumnoId != null && !t.alumnoIds.contains(_filtroAlumnoId)) {
-      return false;
-    }
-
-    // Filtro por Texto de Aula / Lugar (Búsqueda flexible insensible a mayúsculas)
-    if (textoFiltroAula.isNotEmpty) {
-      final aulaTarea = t.aulaId.trim().toLowerCase();
-      if (!aulaTarea.contains(textoFiltroAula)) {
+      // Filtro por Alumno
+      if (_filtroAlumnoId != null && !t.alumnoIds.contains(_filtroAlumnoId)) {
         return false;
       }
-    }
 
-    return true;
-  }).toList()
-    ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+      // Filtro por Texto de Aula / Lugar (Búsqueda flexible insensible a mayúsculas)
+      if (textoFiltroAula.isNotEmpty) {
+        final aulaTarea = t.aulaId.trim().toLowerCase();
+        if (!aulaTarea.contains(textoFiltroAula)) {
+          return false;
+        }
+      }
 
-  final hoy = DateTime.now();
-  final esHoy = _fechaSeleccionada.year == hoy.year &&
-      _fechaSeleccionada.month == hoy.month &&
-      _fechaSeleccionada.day == hoy.day;
+      return true;
+    }).toList()..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
 
-  return Container(
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.divider),
-    ),
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Encabezado: Título y Filtros (Buscador de Aula + Dropdown de Alumnos)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Jornada Escolar',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
-              ),
-            ),
-            Row(
-              children: [
-                // CAMPO DE TEXTO PARA FILTRAR POR AULA / LUGAR
-                SizedBox(
-                  width: 160,
-                  height: 38,
-                  child: TextField(
-                    controller: _filtroAulaCtrl,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar aula...',
-                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSoft),
-                      prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textSoft),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      suffixIcon: _filtroAulaCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 16),
-                              onPressed: () {
-                                setState(() {
-                                  _filtroAulaCtrl.clear();
-                                });
-                              },
-                            )
-                          : null,
-                    ),
-                    onChanged: (val) {
-                      setState(() {}); // Redibuja el cronograma al escribir
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
+    final hoy = DateTime.now();
+    final esHoy =
+        _fechaSeleccionada.year == hoy.year &&
+        _fechaSeleccionada.month == hoy.month &&
+        _fechaSeleccionada.day == hoy.day;
 
-                // FILTRO DE ALUMNOS
-                DropdownButton<String?>(
-                  value: _filtroAlumnoId,
-                  underline: const SizedBox(),
-                  hint: const Text('Todos los alumnos', style: TextStyle(fontSize: 13)),
-                  style: const TextStyle(fontSize: 13, color: AppColors.textDark),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Todos los alumnos'),
-                    ),
-                    ...widget.alumnos.map((a) => DropdownMenuItem<String?>(
-                          value: a.id,
-                          child: Text(a.nombre),
-                        )),
-                  ],
-                  onChanged: (val) => setState(() => _filtroAlumnoId = val),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        // BARRA DE NAVEGACIÓN DE FECHA
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Encabezado: Título y Filtros (Buscador de Aula + Dropdown de Alumnos)
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left, color: AppColors.primary),
-                tooltip: 'Día anterior',
-                onPressed: () => _cambiarDia(-1),
+              const Text(
+                'Jornada Escolar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
               ),
-              InkWell(
-                onTap: _seleccionarFecha,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                          fontSize: 15,
+              Row(
+                children: [
+                  // CAMPO DE TEXTO PARA FILTRAR POR AULA / LUGAR
+                  SizedBox(
+                    width: 160,
+                    height: 38,
+                    child: TextField(
+                      controller: _filtroAulaCtrl,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar aula...',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSoft,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          size: 18,
+                          color: AppColors.textSoft,
+                        ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        suffixIcon: _filtroAulaCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16),
+                                onPressed: () {
+                                  setState(() {
+                                    _filtroAulaCtrl.clear();
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: (val) {
+                        setState(() {}); // Redibuja el cronograma al escribir
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // FILTRO DE ALUMNOS
+                  DropdownButton<String?>(
+                    value: _filtroAlumnoId,
+                    underline: const SizedBox(),
+                    hint: const Text(
+                      'Todos los alumnos',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textDark,
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Todos los alumnos'),
+                      ),
+                      ...widget.alumnos.map(
+                        (a) => DropdownMenuItem<String?>(
+                          value: a.id,
+                          child: Text(a.nombre),
                         ),
                       ),
                     ],
+                    onChanged: (val) => setState(() => _filtroAlumnoId = val),
                   ),
-                ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: AppColors.primary),
-                tooltip: 'Día siguiente',
-                onPressed: () => _cambiarDia(1),
-              ),
-              if (!esHoy)
-                TextButton(
-                  onPressed: () {
-                    final fechaActual = DateTime.now();
-                    setState(() => _fechaSeleccionada = fechaActual);
-                    if (widget.onFechaCambiada != null) {
-                      widget.onFechaCambiada!(fechaActual);
-                    }
-                  },
-                  child: const Text('Hoy'),
-                ),
             ],
           ),
-        ),
-        const SizedBox(height: 12),
-        const Divider(height: 1),
-        const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-        // LISTA DE TAREAS DEL DÍA
-        Expanded(
-          child: tareasDelDia.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.event_available, size: 50, color: AppColors.textSoft),
-                      SizedBox(height: 8),
-                      Text(
-                        'No hay tareas asignadas con estos filtros.',
-                        style: TextStyle(color: AppColors.textSoft),
-                      ),
-                    ],
+          // BARRA DE NAVEGACIÓN DE FECHA
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.chevron_left,
+                    color: AppColors.primary,
                   ),
-                )
-              : ListView.separated(
-                  itemCount: tareasDelDia.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final tarea = tareasDelDia[index];
-                    final esSeleccionada = _tareaEnEdicion?.id == tarea.id;
-                    final horaStr =
-                        '${tarea.horaInicio.hour.toString().padLeft(2, '0')}:${tarea.horaInicio.minute.toString().padLeft(2, '0')} - ${tarea.horaFinal.hour.toString().padLeft(2, '0')}:${tarea.horaFinal.minute.toString().padLeft(2, '0')}';
-
-                    return InkWell(
-                      onTap: () => _cargarTareaParaEdicion(tarea),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: esSeleccionada
-                              ? AppColors.primary.withAlpha(20)
-                              : AppColors.cardBlue,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: esSeleccionada
-                                ? AppColors.primary
-                                : AppColors.primary.withAlpha(50),
-                            width: esSeleccionada ? 2 : 1,
+                  tooltip: 'Día anterior',
+                  onPressed: () => _cambiarDia(-1),
+                ),
+                InkWell(
+                  onTap: _seleccionarFecha,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_month,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                            fontSize: 15,
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                horaStr,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.primary,
+                  ),
+                  tooltip: 'Día siguiente',
+                  onPressed: () => _cambiarDia(1),
+                ),
+                if (!esHoy)
+                  TextButton(
+                    onPressed: () {
+                      final fechaActual = DateTime.now();
+                      setState(() => _fechaSeleccionada = fechaActual);
+                      if (widget.onFechaCambiada != null) {
+                        widget.onFechaCambiada!(fechaActual);
+                      }
+                    },
+                    child: const Text('Hoy'),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+
+          // LISTA DE TAREAS DEL DÍA
+          Expanded(
+            child: tareasDelDia.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(
+                          Icons.event_available,
+                          size: 50,
+                          color: AppColors.textSoft,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'No hay tareas asignadas con estos filtros.',
+                          style: TextStyle(color: AppColors.textSoft),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: tareasDelDia.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final tarea = tareasDelDia[index];
+                      final esSeleccionada = _tareaEnEdicion?.id == tarea.id;
+                      final horaStr =
+                          '${tarea.horaInicio.hour.toString().padLeft(2, '0')}:${tarea.horaInicio.minute.toString().padLeft(2, '0')} - ${tarea.horaFinal.hour.toString().padLeft(2, '0')}:${tarea.horaFinal.minute.toString().padLeft(2, '0')}';
+
+                      return InkWell(
+                        onTap: () => _cargarTareaParaEdicion(tarea),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: esSeleccionada
+                                ? AppColors.primary.withAlpha(20)
+                                : AppColors.cardBlue,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: esSeleccionada
+                                  ? AppColors.primary
+                                  : AppColors.primary.withAlpha(50),
+                              width: esSeleccionada ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  horaStr,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tarea.nombre,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
-                                  if (tarea.descripcion.isNotEmpty)
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      tarea.descripcion,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: AppColors.textSoft, fontSize: 13),
+                                      tarea.nombre,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Alumnos: ${tarea.alumnoIds.length} asignados | Aula: ${tarea.aulaId.isEmpty ? 'Sin aula' : tarea.aulaId}',
-                                    style: const TextStyle(color: AppColors.textSoft, fontSize: 12),
-                                  ),
-                                ],
+                                    if (tarea.descripcion.isNotEmpty)
+                                      Text(
+                                        tarea.descripcion,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textSoft,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Alumnos: ${tarea.alumnoIds.length} asignados | Aula: ${tarea.aulaId.isEmpty ? 'Sin aula' : tarea.aulaId}',
+                                      style: const TextStyle(
+                                        color: AppColors.textSoft,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                              tooltip: 'Eliminar tarea',
-                              onPressed: () => _confirmarEliminacion(tarea),
-                            ),
-                          ],
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                ),
+                                tooltip: 'Eliminar tarea',
+                                onPressed: () => _confirmarEliminacion(tarea),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    ),
-  );
-}
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFormularioAsignacion(List<Tarea> solapamientos) {
     final hayConflicto = solapamientos.isNotEmpty;
     final esEdicion = _tareaEnEdicion != null;
@@ -521,7 +584,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 children: [
                   Text(
                     esEdicion ? 'Editar Tarea' : 'Planificar Nueva Tarea',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
                   ),
                   if (esEdicion)
                     TextButton.icon(
@@ -532,7 +599,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('Modalidad de Asignación:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Modalidad de Asignación:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               SegmentedButton<TipoAsignacion>(
                 segments: const [
@@ -565,18 +635,35 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               _buildSelectorAlumnos(),
               const SizedBox(height: 16),
               if (_tipoAsignacion == TipoAsignacion.recurrente) ...[
-                const Text('Frecuencia de repetición:', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Frecuencia de repetición:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<FrecuenciaRecurrencia>(
                   initialValue: _frecuencia,
                   decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: FrecuenciaRecurrencia.diario, child: Text('Diario (Todos los días)')),
-                    DropdownMenuItem(value: FrecuenciaRecurrencia.diasLectivos, child: Text('Días lectivos (Lunes a Viernes)')),
-                    DropdownMenuItem(value: FrecuenciaRecurrencia.semanal, child: Text('Semanal (Mismo día cada semana)')),
+                    DropdownMenuItem(
+                      value: FrecuenciaRecurrencia.diario,
+                      child: Text('Diario (Todos los días)'),
+                    ),
+                    DropdownMenuItem(
+                      value: FrecuenciaRecurrencia.diasLectivos,
+                      child: Text('Días lectivos (Lunes a Viernes)'),
+                    ),
+                    DropdownMenuItem(
+                      value: FrecuenciaRecurrencia.semanal,
+                      child: Text('Semanal (Mismo día cada semana)'),
+                    ),
                   ],
                   onChanged: (val) => setState(() => _frecuencia = val!),
                 ),
@@ -587,9 +674,13 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 decoration: InputDecoration(
                   labelText: 'Nombre de la tarea *',
                   hintText: 'Ej. Lectura compartida, Taller de Plástica',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Ingresa el nombre de la tarea' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Ingresa el nombre de la tarea'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -597,7 +688,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 maxLines: 2,
                 decoration: InputDecoration(
                   labelText: 'Descripción / Instrucciones',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -607,11 +700,16 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                   labelText: 'Aula / Espacio escolar',
                   hintText: 'Ej. Aula TEA, Gimnasio, Aula 3',
                   prefixIcon: const Icon(Icons.room_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Horario Escolar:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Horario Escolar:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -644,7 +742,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: AppColors.orange, size: 28),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.orange,
+                        size: 28,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -652,12 +754,18 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                           children: [
                             const Text(
                               'Solapamiento detectado',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.orange),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.orange,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Existe conflicto con ${solapamientos.length} tarea(s) en este horario: "${solapamientos.first.nombre}". Modifica la hora o los alumnos asignados para evitar cruces.',
-                              style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textDark,
+                              ),
                             ),
                           ],
                         ),
@@ -667,18 +775,29 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 )
               else
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.greenSoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: const [
-                      Icon(Icons.check_circle_outline, color: AppColors.greenDark, size: 20),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.greenDark,
+                        size: 20,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Horario escolar libre de solapamientos.',
-                        style: TextStyle(color: AppColors.greenDark, fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: AppColors.greenDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -689,17 +808,32 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 height: 48,
                 child: ElevatedButton.icon(
                   icon: _guardando
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
                       : Icon(esEdicion ? Icons.edit : Icons.save_outlined),
-                  label: Text(_guardando
-                      ? 'Guardando...'
-                      : (esEdicion ? 'Guardar Cambios' : 'Asignar Tarea')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: hayConflicto ? Colors.grey : AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  label: Text(
+                    _guardando
+                        ? 'Guardando...'
+                        : (esEdicion ? 'Guardar Cambios' : 'Asignar Tarea'),
                   ),
-                  onPressed: hayConflicto || _guardando ? null : _ejecutarGuardado,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hayConflicto
+                        ? Colors.grey
+                        : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: hayConflicto || _guardando
+                      ? null
+                      : _ejecutarGuardado,
                 ),
               ),
             ],
@@ -742,7 +876,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Seleccionar Alumnos del Grupo:', style: TextStyle(fontWeight: FontWeight.w500)),
+        const Text(
+          'Seleccionar Alumnos del Grupo:',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -775,16 +912,17 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    
+
     if (pick != null) {
       setState(() => _fechaSeleccionada = pick);
-      
+
       // Añade estas líneas para avisar al ViewModel del cambio de fecha
       if (widget.onFechaCambiada != null) {
         widget.onFechaCambiada!(pick);
       }
     }
   }
+
   Future<void> _seleccionarHora({required bool esInicio}) async {
     final pick = await showTimePicker(
       context: context,
@@ -807,88 +945,92 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     }
   }
 
-Future<void> _confirmarEliminacion(Tarea tarea) async {
-  final bool esFiltroEspecifico = _filtroAlumnoId != null;
-  
-  // Obtener el nombre del alumno seleccionado para mostrarlo en el diálogo
-  String nombreAlumno = '';
-  if (esFiltroEspecifico) {
-    final alumno = widget.alumnos.firstWhere(
-      (a) => a.id == _filtroAlumnoId, 
-      orElse: () => Usuario(
-        id: '',
-        nombre: 'el alumno',
-        dni: '',
-        telefonoContacto: '',
-        fechaNacimiento: DateTime.now(),
-        rol: RolUsuario.alumno,
+  Future<void> _confirmarEliminacion(Tarea tarea) async {
+    final bool esFiltroEspecifico = _filtroAlumnoId != null;
+
+    // Obtener el nombre del alumno seleccionado para mostrarlo en el diálogo
+    String nombreAlumno = '';
+    if (esFiltroEspecifico) {
+      final alumno = widget.alumnos.firstWhere(
+        (a) => a.id == _filtroAlumnoId,
+        orElse: () => Usuario(
+          id: '',
+          nombreUsuario: '',
+          nombre: 'el  alumno',
+          rol: RolUsuario.alumno,
+        ),
+      );
+      nombreAlumno = alumno.nombre;
+    }
+
+    final String tituloDialogo = esFiltroEspecifico
+        ? 'Desasignar Tarea'
+        : 'Eliminar Tarea';
+    final String contenidoDialogo = esFiltroEspecifico
+        ? '¿Seguro que deseas quitar la tarea "${tarea.nombre}" a $nombreAlumno?'
+        : '¿Seguro que deseas eliminar la tarea "${tarea.nombre}" por completo para todos los alumnos?';
+
+    final bool? del = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tituloDialogo),
+        content: Text(contenidoDialogo),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          TextButton(
+            child: Text(
+              esFiltroEspecifico ? 'Desasignar' : 'Eliminar',
+              style: const TextStyle(color: Colors.red),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
       ),
     );
-    nombreAlumno = alumno.nombre;
-  }
 
-  final String tituloDialogo = esFiltroEspecifico ? 'Desasignar Tarea' : 'Eliminar Tarea';
-  final String contenidoDialogo = esFiltroEspecifico
-      ? '¿Seguro que deseas quitar la tarea "${tarea.nombre}" a $nombreAlumno?'
-      : '¿Seguro que deseas eliminar la tarea "${tarea.nombre}" por completo para todos los alumnos?';
+    if (del == true) {
+      bool exito = false;
 
-  final bool? del = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(tituloDialogo),
-      content: Text(contenidoDialogo),
-      actions: [
-        TextButton(
-          child: const Text('Cancelar'),
-          onPressed: () => Navigator.of(ctx).pop(false),
-        ),
-        TextButton(
-          child: Text(
-            esFiltroEspecifico ? 'Desasignar' : 'Eliminar',
-            style: const TextStyle(color: Colors.red),
+      if (esFiltroEspecifico) {
+        final nuevosAlumnoIds = tarea.alumnoIds
+            .where((id) => id != _filtroAlumnoId)
+            .toList();
+
+        if (nuevosAlumnoIds.isEmpty) {
+          if (widget.onEliminarTarea != null) {
+            await widget.onEliminarTarea!(tarea.id);
+          }
+        } else {
+          if (widget.onActualizarTarea != null) {
+            final tareaActualizada = tarea.copyWith(alumnoIds: nuevosAlumnoIds);
+            await widget.onActualizarTarea!(tareaActualizada);
+          }
+        }
+      } else {
+        if (widget.onEliminarTarea != null) {
+          await widget.onEliminarTarea!(tarea.id);
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              esFiltroEspecifico
+                  ? 'Tarea desasignada a $nombreAlumno correctamente.'
+                  : 'Tarea eliminada correctamente.',
+            ),
           ),
-          onPressed: () => Navigator.of(ctx).pop(true),
-        ),
-      ],
-    ),
-  );
-
-  if (del == true) {
-    bool exito = false;
-
-    if (esFiltroEspecifico) {
-  final nuevosAlumnoIds = tarea.alumnoIds.where((id) => id != _filtroAlumnoId).toList();
-
-  if (nuevosAlumnoIds.isEmpty) {
-    if (widget.onEliminarTarea != null) {
-      await widget.onEliminarTarea!(tarea.id);
-    }
-  } else {
-    if (widget.onActualizarTarea != null) {
-      final tareaActualizada = tarea.copyWith(alumnoIds: nuevosAlumnoIds);
-      await widget.onActualizarTarea!(tareaActualizada);
+        );
+        if (_tareaEnEdicion?.id == tarea.id) {
+          _limpiarFormulario();
+        }
+      }
     }
   }
-} else {
-  if (widget.onEliminarTarea != null) {
-    await widget.onEliminarTarea!(tarea.id);
-  }
-}
-
-if (mounted) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(esFiltroEspecifico
-          ? 'Tarea desasignada a $nombreAlumno correctamente.'
-          : 'Tarea eliminada correctamente.'),
-    ),
-  );
-  if (_tareaEnEdicion?.id == tarea.id) {
-    _limpiarFormulario();
-  }
-}
-  }
-}
 
   Future<void> _ejecutarGuardado() async {
     if (!_formKey.currentState!.validate()) return;
@@ -897,13 +1039,14 @@ if (mounted) {
       TipoAsignacion.individual =>
         _alumnoSeleccionadoId != null ? [_alumnoSeleccionadoId!] : [],
       TipoAsignacion.grupal ||
-      TipoAsignacion.recurrente =>
-        _alumnosGrupalesIds.toList(),
+      TipoAsignacion.recurrente => _alumnosGrupalesIds.toList(),
     };
 
     if (alumnosAsignados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona al menos un alumno para la tarea.')),
+        const SnackBar(
+          content: Text('Selecciona al menos un alumno para la tarea.'),
+        ),
       );
       return;
     }
@@ -913,7 +1056,11 @@ if (mounted) {
 
     if (!fin.isAfter(inicio)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La hora final debe ser posterior a la hora de inicio.')),
+        const SnackBar(
+          content: Text(
+            'La hora final debe ser posterior a la hora de inicio.',
+          ),
+        ),
       );
       return;
     }
@@ -952,9 +1099,11 @@ if (mounted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(esEdicion
-                ? 'Tarea actualizada correctamente.'
-                : 'Tarea planificada correctamente.'),
+            content: Text(
+              esEdicion
+                  ? 'Tarea actualizada correctamente.'
+                  : 'Tarea planificada correctamente.',
+            ),
           ),
         );
         _limpiarFormulario();
