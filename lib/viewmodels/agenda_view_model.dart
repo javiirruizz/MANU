@@ -1,31 +1,37 @@
 import 'dart:async';
-
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../data/agenda_repository.dart';
+import '../data/audio_service.dart';
+import '../data/notification_service.dart';
 import '../data/tarea_repository.dart';
 import '../models/meal_item.dart';
 import '../models/mood_option.dart';
-import '../models/routine_task.dart';
 import '../models/tarea.dart';
-import '../data/audio_service.dart';
-import '../core/app_colors.dart';
-import '../data/notification_service.dart';
+import 'package:flutter/material.dart'; // Para Icons si hiciera falta
 
 enum AgendaPeriod { morning, afternoon }
 
+enum FiltroTareas { todas, actuales, pendientes, completadas }
+
 /// Estado y lógica de la pantalla "Día a día".
-/// La vista solo lee de aquí y llama a sus métodos; no tiene lógica propia.
 class AgendaViewModel extends ChangeNotifier {
-  AgendaViewModel(
-    AgendaRepository repository,
-    this._tareaRepository,
-    this._notificaciones, {
+  AgendaViewModel({
+    required this.alumnoId,
+    required AgendaRepository repository,
+    required TareaRepository tareaRepository,
+    required NotificationService notificaciones,
     DateTime? today,
-  }) : _today = today ?? DateTime.now(),
+  }) : _tareaRepo = tareaRepository,
+       _notificaciones = notificaciones,
+       _now = today ?? DateTime.now(),
        _meals = repository.getMeals(),
        _moods = repository.getMoods(),
-       _reminder = repository.getReminder();
+       _reminder = repository.getReminder() {
+    // Reloj interno: cada minuto recalcula la tarea actual (Archivo 2)
+    _reloj = Timer.periodic(const Duration(minutes: 1), (_) => _tick());
+    _iniciarStream();
+  }
 
   static const _weekdays = [
     'Lunes',
@@ -51,115 +57,71 @@ class AgendaViewModel extends ChangeNotifier {
     'Diciembre',
   ];
 
-  static const _estilos = [
-    (AppColors.primary, AppColors.badge),
-    (AppColors.green, AppColors.greenSoft),
-    (AppColors.orange, AppColors.orangeSoft),
-  ];
-
-  final AudioService _audioService = AudioService();
-  final TareaRepository _tareaRepository;
+  final String alumnoId;
+  final TareaRepository _tareaRepo;
   final NotificationService _notificaciones;
+  final AudioService _audioService = AudioService();
 
-  final DateTime _today;
+  late final Timer _reloj;
+  StreamSubscription<List<Tarea>>? _sub;
+  bool _disposed = false;
+
+  DateTime _now;
+  List<Tarea> _tareas = [];
   final List<MealItem> _meals;
   final List<MoodOption> _moods;
   final String _reminder;
 
-  StreamSubscription<List<Tarea>>? _sub;
-  String? _alumnoId;
-  List<RoutineTask> _tasks = [];
-
+  FiltroTareas _filtro = FiltroTareas.todas;
   String? _selectedMoodId;
   AgendaPeriod _period = AgendaPeriod.morning;
   bool _dayCompleted = false;
   String? _error;
 
-  // ---- Sesión del alumno ----
-  /// Se llama cuando cambia el usuario logueado (null = nadie / no es alumno).
-  void setAlumno(String? alumnoId) {
-    if (alumnoId == _alumnoId) return;
-    _alumnoId = alumnoId;
-    _sub?.cancel();
-    _sub = null;
-    _tasks = [];
-    _notificaciones.cancelarTodos();
-
-    if (alumnoId != null) {
-      _sub = _tareaRepository
-          .streamTareasAlumnoDesde(alumnoId, _today)
-          .listen(
-            _onTareas,
-            onError: (Object e) {
-              _error = 'No se pudieron cargar las tareas.';
-              notifyListeners();
-            },
-          );
-    }
-    notifyListeners();
-  }
-
-  void _onTareas(List<Tarea> todas) {
-    final alumnoId = _alumnoId;
-    if (alumnoId == null) return;
-
-    // Agenda: solo las de hoy.
-    final hoy = todas.where((t) => _mismoDia(t.fecha, _today)).toList();
-    _tasks = [
-      for (var i = 0; i < hoy.length; i++) _aRoutineTask(hoy[i], i, alumnoId),
-    ];
-
-    // Avisos (HU 16): todas las futuras que aún no ha completado.
-    _notificaciones.reprogramar(
-      todas.where((t) => !t.estaCompletadaPor(alumnoId)).toList(),
-    );
-    notifyListeners();
-  }
-
-  RoutineTask _aRoutineTask(Tarea t, int i, String alumnoId) {
-    final (color, fondo) = _estilos[i % _estilos.length];
-    return RoutineTask(
-      id: t.id,
-      time: Tarea.hhmm(t.horaInicio),
-      endTime: Tarea.hhmm(t.horaFinal),
-      duration: t.duracionTexto,
-      title: t.nombre,
-      subtitle: t.descripcion,
-      icon: Icons.event_note_outlined,
-      iconColor: color,
-      iconBackground: fondo,
-      completed: t.estaCompletadaPor(alumnoId),
-      imageUrl: t.imagenAdjuntaUrl,
-      audioUrl: t.audioUrl,
-    );
-  }
-
-  static bool _mismoDia(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
   // ---- Datos para la vista ----
-  List<RoutineTask> get tasks => List.unmodifiable(_tasks);
+  List<Tarea> get tasks => List.unmodifiable(_tareas.where(_cumpleFiltro));
   List<MealItem> get meals => List.unmodifiable(_meals);
   List<MoodOption> get moods => List.unmodifiable(_moods);
   String get reminder => _reminder;
   String? get error => _error;
 
-  int get totalCount => _tasks.length;
-  int get completedCount => _tasks.where((t) => t.completed).length;
+  int get totalCount => _tareas.length;
+  int get completedCount => _tareas.where(esCompletada).length;
 
+  FiltroTareas get filtro => _filtro;
   String? get selectedMoodId => _selectedMoodId;
   AgendaPeriod get period => _period;
   bool get dayCompleted => _dayCompleted;
 
+  // ---- Estado de cada tarea ----
+  bool esCompletada(Tarea t) => t.completadaPor.containsKey(alumnoId);
+
+  bool esActual(Tarea t) =>
+      !esCompletada(t) &&
+      !_now.isBefore(t.horaInicio) &&
+      _now.isBefore(t.horaFinal);
+
+  bool esProxima(Tarea t) => !esCompletada(t) && t.horaInicio.isAfter(_now);
+
+  bool _cumpleFiltro(Tarea t) => switch (_filtro) {
+    FiltroTareas.todas => true,
+    FiltroTareas.actuales => esActual(t),
+    FiltroTareas.pendientes => !esCompletada(t),
+    FiltroTareas.completadas => esCompletada(t),
+  };
+
+  static bool _mismoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   // ---- Fecha ----
-  String get weekdayName => _weekdays[_today.weekday - 1];
+  String get weekdayName => _weekdays[_now.weekday - 1];
   String get weekdayInitial => weekdayName[0];
-  int get dayNumber => _today.day;
-  String get monthName => _months[_today.month - 1];
-  int get year => _today.year;
+  int get dayNumber => _now.day;
+  String get monthName => _months[_now.month - 1];
+  int get year => _now.year;
 
   String get dayNote {
-    switch (_today.weekday) {
+    switch (_now.weekday) {
       case DateTime.monday:
         return 'Día de inicio';
       case DateTime.friday:
@@ -170,38 +132,95 @@ class AgendaViewModel extends ChangeNotifier {
   }
 
   String get season {
-    final m = _today.month;
+    final m = _now.month;
     if (m == 12 || m <= 2) return 'Invierno';
     if (m <= 5) return 'Primavera';
     if (m <= 8) return 'Verano';
     return 'Otoño';
   }
 
-  // ---- Acciones ----
-
-  /// HU 20: "Tarea terminada". Suena el refuerzo al instante y se guarda en
-  /// Firestore; el stream devuelve la tarea ya como completada y el panel del
-  /// profesor se entera por su propio stream.
-  void completarTarea(String id) {
-    final alumnoId = _alumnoId;
-    if (alumnoId == null) return;
-
-    _audioService.reproducirExito();
-    _tareaRepository.marcarCompletada(id, alumnoId).catchError((Object e) {
-      _error = 'No se pudo guardar que has terminado la tarea.';
-      notifyListeners();
-    });
+  // ---- Carga (Stream) y Reloj ----
+  void _iniciarStream() {
+    _sub?.cancel();
+    _sub = _tareaRepo
+        .streamTareasAlumnoDesde(alumnoId, _now)
+        .listen(
+          _onTareas,
+          onError: (Object e) {
+            _error = 'No se pudieron cargar las tareas.';
+            notifyListeners();
+          },
+        );
   }
 
-  /// Compatibilidad con la vista actual, que llama a toggleTask.
-  void toggleTask(String id) {
-    final alumnoId = _alumnoId;
-    if (alumnoId == null) return;
-    final yaCompletada = _tasks.any((t) => t.id == id && t.completed);
-    if (yaCompletada) {
-      _tareaRepository.desmarcarCompletada(id, alumnoId);
+  void _onTareas(List<Tarea> todas) {
+    // 1. Filtrar solo las de hoy y ordenarlas
+    final hoy = todas.where((t) => _mismoDia(t.fecha, _now)).toList();
+    hoy.sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+    _tareas = hoy;
+
+    // 2. Programar notificaciones locales (Archivo 1)
+    _notificaciones.reprogramar(
+      _tareas.where((t) => !esCompletada(t)).toList(),
+    );
+    notifyListeners();
+  }
+
+  void _tick() {
+    final antes = _now;
+    _now = DateTime.now();
+    if (antes.day != _now.day || antes.month != _now.month) {
+      _iniciarStream(); // Si cambia el día, pedimos un stream nuevo
     } else {
-      completarTarea(id);
+      notifyListeners(); // Actualiza la UI para las tareas "actuales"
+    }
+  }
+
+  // ---- Acciones ----
+  void setFiltro(FiltroTareas filtro) {
+    _filtro = filtro;
+    notifyListeners();
+  }
+
+  Future<void> toggleTask(String id) async {
+    final t = _tareas.where((t) => t.id == id).firstOrNull;
+    if (t == null) return;
+    await marcarTarea(id, !esCompletada(t));
+  }
+
+  Future<void> completarTarea(String id) => marcarTarea(id, true);
+
+  Future<void> marcarTarea(String id, bool completada) async {
+    final i = _tareas.indexWhere((t) => t.id == id);
+    if (i == -1) return;
+    final original = _tareas[i];
+
+    // --- 1. Actualización optimista de la UI ---
+    final mapa = {...original.completadaPor};
+    if (completada) {
+      mapa[alumnoId] = DateTime.now();
+      _audioService.reproducirExito(); // Audio al instante
+    } else {
+      mapa.remove(alumnoId);
+    }
+    _tareas[i] = original.copyWith(completadaPor: mapa);
+    notifyListeners();
+
+    // --- 2. Enviar a servidor ---
+    try {
+      if (completada) {
+        await _tareaRepo.marcarCompletada(id, alumnoId);
+      } else {
+        await _tareaRepo.desmarcarCompletada(id, alumnoId);
+      }
+      // El stream confirmará el cambio pronto
+    } catch (e) {
+      // Rollback visual si la petición falla
+      debugPrint('Error guardando tarea: $e');
+      final j = _tareas.indexWhere((t) => t.id == id);
+      if (j != -1) _tareas[j] = original;
+      _error = 'No se pudo guardar el cambio.';
+      notifyListeners();
     }
   }
 
@@ -216,19 +235,15 @@ class AgendaViewModel extends ChangeNotifier {
   }
 
   void setPeriod(AgendaPeriod period) {
-    // TODO: filtrar las tareas por mañana/tarde cuando se defina el criterio.
     _period = period;
     notifyListeners();
   }
 
   void completeDay() {
-    // TODO: guardar el registro del día y el estado de ánimo en Firestore.
     _dayCompleted = true;
     notifyListeners();
   }
 
-  // NOTA: para que los audios alojados en Firebase suenen en web, quien
-  // administre Firebase debe configurar las reglas CORS en Google Cloud.
   void readAloud([String? text]) {
     final textoALeer =
         text ??
@@ -241,8 +256,16 @@ class AgendaViewModel extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _sub?.cancel();
+    _reloj.cancel();
+    _notificaciones.cancelarTodos(); // Limpieza al salir
     super.dispose();
   }
 }

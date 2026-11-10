@@ -31,7 +31,9 @@ class UsuarioCreado {
 
 class UsuarioRepository {
   UsuarioRepository({FirebaseFirestore? firestore})
-    : _db = firestore ?? (Firebase.apps.isNotEmpty ? FirebaseFirestore.instance : null);
+    : _db =
+          firestore ??
+          (Firebase.apps.isNotEmpty ? FirebaseFirestore.instance : null);
 
   final FirebaseFirestore? _db;
 
@@ -143,10 +145,6 @@ class UsuarioRepository {
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
   }) => usuario.tienePermiso(permisoRequerido);
-
-  // ---------------------------------------------------------------------
-  // HU 02.1 - Alta de nuevas cuentas
-  // ---------------------------------------------------------------------
 
   Future<FirebaseApp> _appSecundaria() async {
     try {
@@ -287,7 +285,10 @@ class UsuarioRepository {
     } else {
       _usuariosLocales.add(actualizado);
     }
-    await _db?.collection('usuarios').doc(usuarioId).update(actualizado.toMap());
+    await _db
+        ?.collection('usuarios')
+        .doc(usuarioId)
+        .update(actualizado.toMap());
     return actualizado;
   }
 
@@ -316,7 +317,10 @@ class UsuarioRepository {
     } else {
       _usuariosLocales.add(actualizado);
     }
-    await _db?.collection('usuarios').doc(usuarioId).update(actualizado.toMap());
+    await _db
+        ?.collection('usuarios')
+        .doc(usuarioId)
+        .update(actualizado.toMap());
     return actualizado;
   }
 

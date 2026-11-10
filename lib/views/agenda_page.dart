@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../data/agenda_repository.dart';
+import '../data/notification_service.dart'; // Añadimos la importación
+import '../data/tarea_repository.dart';
+import '../viewmodels/agenda_view_model.dart';
+import '../viewmodels/auth_view_model.dart';
 import 'widgets/date_bar.dart';
 import 'widgets/menu_section.dart';
 import 'widgets/mood_section.dart';
@@ -12,30 +19,38 @@ class AgendaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: Column(
-            children: [
-              const TopBar(),
-              const SizedBox(height: 10),
-              const DateBar(),
-              const SizedBox(height: 12),
-              const Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 7, child: RoutineSection()),
-                    SizedBox(width: 12),
-                    Expanded(flex: 5, child: MenuSection()),
-                    SizedBox(width: 12),
-                    Expanded(flex: 4, child: MoodSection()),
-                  ],
+    return ChangeNotifierProvider(
+      create: (ctx) => AgendaViewModel(
+        alumnoId: ctx.read<AuthViewModel>().usuario!.id,
+        repository: AgendaRepository(),
+        tareaRepository: TareaRepository(),
+        notificaciones: NotificationService(),
+      ),
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Column(
+              children: [
+                const TopBar(),
+                const SizedBox(height: 10),
+                const DateBar(),
+                const SizedBox(height: 12),
+                const Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(flex: 7, child: RoutineSection()),
+                      SizedBox(width: 12),
+                      Expanded(flex: 5, child: MenuSection()),
+                      SizedBox(width: 12),
+                      Expanded(flex: 4, child: MoodSection()),
+                    ],
+                  ),
                 ),
-              ),
-              const StatusFooter(),
-            ],
+                const StatusFooter(),
+              ],
+            ),
           ),
         ),
       ),

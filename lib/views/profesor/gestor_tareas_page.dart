@@ -1034,8 +1034,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     );
 
     if (del == true) {
-      bool exito = false;
-
       if (esFiltroEspecifico) {
         final nuevosAlumnoIds = tarea.alumnoIds
             .where((id) => id != _filtroAlumnoId)

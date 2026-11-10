@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../core/app_colors.dart';
 import '../models/meal_item.dart';
 import '../models/mood_option.dart';
-import '../models/routine_task.dart';
 
 /// Fuente de datos de la agenda.
 ///
@@ -11,53 +10,6 @@ import '../models/routine_task.dart';
 /// ViewModel ni las vistas.
 
 class AgendaRepository {
-  List<RoutineTask> getTasks() => const [
-    RoutineTask(
-      id: '1',
-      time: '09:00',
-      endTime: '10:00',
-      title: 'Asamblea matinal',
-      subtitle: 'Saludos y calendario',
-      icon: Icons.groups_outlined,
-      iconColor: AppColors.primary,
-      iconBackground: AppColors.badge,
-      // Imagen de ejemplo
-      imageUrl: 'https://picsum.photos/400/200',
-      // Audio de ejemplo
-      //audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    ),
-    RoutineTask(
-      id: '2',
-      time: '11:00',
-      endTime: '12:00',
-      title: 'Recreo y patio',
-      subtitle: 'Juego libre y descanso',
-      icon: Icons.park_outlined,
-      iconColor: AppColors.green,
-      iconBackground: AppColors.greenSoft,
-    ),
-    RoutineTask(
-      id: '3',
-      time: '12:30',
-      endTime: '13:30',
-      title: 'Taller de tareas',
-      subtitle: 'Fichas y lectoescritura',
-      icon: Icons.palette_outlined,
-      iconColor: AppColors.orange,
-      iconBackground: AppColors.orangeSoft,
-    ),
-    RoutineTask(
-      id: '4',
-      time: '14:00',
-      endTime: '15:00',
-      title: 'Comedor y aseo',
-      subtitle: 'Lavado y comida rica',
-      icon: Icons.restaurant,
-      iconColor: AppColors.primary,
-      iconBackground: AppColors.badge,
-    ),
-  ];
-
   List<MealItem> getMeals() => const [
     MealItem(
       label: '1º PLATO',

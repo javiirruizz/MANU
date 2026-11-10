@@ -1,241 +1,310 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/app_colors.dart';
-import '../../models/routine_task.dart';
-import '../../viewmodels/agenda_view_model.dart';
-import 'section_card.dart';
 
-/// Columna "Rutina del día".
+import '../../core/app_colors.dart';
+import '../../models/tarea.dart';
+import '../../viewmodels/agenda_view_model.dart';
+
 class RoutineSection extends StatelessWidget {
   const RoutineSection({super.key});
+
+  static const _etiquetas = {
+    FiltroTareas.todas: 'Todas',
+    FiltroTareas.actuales: 'Actuales',
+    FiltroTareas.pendientes: 'Pendientes',
+    FiltroTareas.completadas: 'Completadas',
+  };
+
+  static const _vacios = {
+    FiltroTareas.todas: 'Hoy no tienes tareas.',
+    FiltroTareas.actuales: 'Ahora no tienes ninguna tarea.',
+    FiltroTareas.pendientes: '¡No te queda nada pendiente!',
+    FiltroTareas.completadas: 'Todavía no has completado ninguna tarea.',
+  };
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
 
-    if (vm.error != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final msg = vm.error;
-        if (msg == null || !context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
-        vm.clearError();
-      });
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Mi rutina',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                '${vm.completedCount}/${vm.totalCount}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Leer en voz alta',
+                icon: const Icon(Icons.volume_up_outlined),
+                onPressed: () => vm.readAloud(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final f in FiltroTareas.values) ...[
+                  ChoiceChip(
+                    label: Text(
+                      _etiquetas[f]!,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: vm.filtro == f,
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: vm.filtro == f ? Colors.white : AppColors.textDark,
+                    ),
+                    showCheckmark: false,
+                    onSelected: (_) => vm.setFiltro(f),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(child: _contenido(vm)),
+        ],
+      ),
+    );
+  }
+
+  Widget _contenido(AgendaViewModel vm) {
+    if (vm.error != null && vm.totalCount == 0) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(vm.error!, style: const TextStyle(color: AppColors.textSoft)),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: vm.clearError,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
     }
 
-    return SectionCard(
-      icon: Icons.access_time,
-      title: 'RUTINA DEL DÍA',
-      badge: '${vm.completedCount} de ${vm.totalCount}',
-      child: vm.tasks.isEmpty
-          ? const Center(
-              child: Text(
-                'Hoy no tienes tareas.',
-                style: TextStyle(fontSize: 16, color: AppColors.textSoft),
-              ),
-            )
-          : ListView.separated(
-              itemCount: vm.tasks.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (context, i) {
-                final task = vm.tasks[i];
-                return _TaskTile(
-                  task: task,
-                  onComplete: () => vm.completarTarea(task.id),
-                );
-              },
-            ),
+    final tareas = vm.tasks;
+    if (tareas.isEmpty) {
+      return Center(
+        child: Text(
+          _vacios[vm.filtro]!,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 18, color: AppColors.textSoft),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: tareas.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final t = tareas[i];
+        return _TareaCard(
+          tarea: t,
+          actual: vm.esActual(t),
+          completada: vm.esCompletada(t),
+          onToggle: () => vm.toggleTask(t.id),
+          onAudio: t.audioUrl == null
+              ? null
+              : () => vm.playTaskAudio(t.audioUrl!),
+        );
+      },
     );
   }
 }
 
-class _TaskTile extends StatelessWidget {
-  const _TaskTile({required this.task, required this.onComplete});
+class _TareaCard extends StatelessWidget {
+  const _TareaCard({
+    required this.tarea,
+    required this.actual,
+    required this.completada,
+    required this.onToggle,
+    this.onAudio,
+  });
 
-  final RoutineTask task;
-  final VoidCallback onComplete;
+  final Tarea tarea;
+  final bool actual;
+  final bool completada;
+  final VoidCallback onToggle;
+  final VoidCallback? onAudio;
+
+  static String _hora(DateTime d) =>
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  String? get _pictoUrl {
+    if (tarea.pictogramas.isNotEmpty)
+      return tarea.pictogramas.first.urlResuelta;
+    final id = tarea.pictogramaId;
+    if (id == null) return null;
+    return 'https://static.arasaac.org/pictograms/$id/${id}_300.png';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: task.completed ? AppColors.greenSoft : AppColors.cardBlue,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 48,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.access_time,
-                    size: 15,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    task.time,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: task.iconBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(task.icon, color: task.iconColor, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Texto principal: se lee como un solo bloque.
-                  Semantics(
-                    container: true,
-                    excludeSemantics: true,
-                    label:
-                        '${task.timeRange}${task.duration != null ? ", dura ${task.duration}" : ""}. '
-                        '${task.title}. ${task.subtitle}. '
-                        '${task.completed ? "Hecha" : "Pendiente"}',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        // HU 16: tramo horario y duración en texto
-                        Text(
-                          task.duration != null
-                              ? '${task.timeRange} · ${task.duration}'
-                              : task.timeRange,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        if (task.subtitle.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            task.subtitle,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSoft,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Imagen adjunta (HU 08.1) + apoyos de audio (HU 18):
-                  // se queda igual que lo tenías.
-                  if (task.imageUrl != null && task.imageUrl!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => Dialog(
-                            backgroundColor: Colors.transparent,
-                            insetPadding: const EdgeInsets.all(10),
-                            child: InteractiveViewer(
-                              child: Image.network(task.imageUrl!),
-                            ),
-                          ),
-                        );
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          task.imageUrl!,
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.record_voice_over,
-                            color: AppColors.primary,
-                          ),
-                          onPressed: () {
-                            context.read<AgendaViewModel>().readAloud(
-                              "${task.title}. ${task.subtitle}",
-                            );
-                          },
-                          tooltip: 'Leer instrucciones',
-                        ),
-                        if (task.audioUrl != null && task.audioUrl!.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(
-                              Icons.play_circle_fill,
-                              color: AppColors.primary,
-                            ),
-                            onPressed: () {
-                              context.read<AgendaViewModel>().playTaskAudio(
-                                task.audioUrl!,
-                              );
-                            },
-                            tooltip: 'Reproducir grabación',
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            if (task.completed)
-              Semantics(
-                label: 'Tarea hecha',
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.green,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 28),
-                ),
-              )
-            else
-              SizedBox(
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: onComplete,
-                  icon: const Icon(Icons.check_circle_outline, size: 26),
-                  label: const Text(
-                    'Tarea terminada',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
-              ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: actual
+            ? AppColors.cardBlue
+            : completada
+            ? AppColors.background
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: actual ? AppColors.primary : AppColors.divider,
+          width: actual ? 3 : 1,
         ),
       ),
+      child: Row(
+        children: [
+          _Pictograma(url: _pictoUrl),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    if (actual) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'AHORA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  tarea.nombre,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: completada ? AppColors.textSoft : AppColors.textDark,
+                  ),
+                ),
+                if (tarea.descripcion.isNotEmpty)
+                  Text(
+                    tarea.descripcion,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSoft,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (onAudio != null)
+            IconButton(
+              tooltip: 'Escuchar',
+              icon: const Icon(Icons.volume_up_outlined),
+              onPressed: onAudio,
+            ),
+          const SizedBox(width: 4),
+          Semantics(
+            button: true,
+            label: completada ? 'Marcar como pendiente' : 'Marcar como hecha',
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onToggle,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: completada ? AppColors.green : AppColors.checkEmpty,
+                ),
+                child: Icon(
+                  Icons.check,
+                  color: completada ? Colors.white : AppColors.surface,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Pictograma extends StatelessWidget {
+  const _Pictograma({this.url});
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    const icono = Icon(
+      Icons.event_note_outlined,
+      color: AppColors.primary,
+      size: 32,
+    );
+    return Container(
+      width: 64,
+      height: 64,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.badge,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: url == null
+          ? icono
+          : Image.network(
+              url!,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => icono,
+            ),
     );
   }
 }
