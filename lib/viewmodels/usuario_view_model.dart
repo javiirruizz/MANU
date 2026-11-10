@@ -1,25 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/usuario_repository.dart';
 import '../models/usuario.dart';
 
 class UsuarioViewModel extends ChangeNotifier {
-  UsuarioViewModel(this._repository, {Usuario? solicitanteInicial}) {
-    _solicitante = solicitanteInicial ??
-        Usuario(
-          id: 'admin_1',
-          nombre: 'Carlos Delgado (Admin)',
-          dni: '12345678A',
-          telefonoContacto: '600112233',
-          fechaNacimiento: DateTime(1985, 3, 14),
-          rol: RolUsuario.administrador,
-        );
+  UsuarioViewModel(this._repository, {required Usuario solicitante})
+    : _solicitante = solicitante {
     cargarUsuarios();
   }
 
   final UsuarioRepository _repository;
 
-  late Usuario _solicitante;
+  Usuario _solicitante;
   List<Usuario> _usuarios = [];
   Usuario? _usuarioSeleccionado;
   RolUsuario? _filtroRol;
@@ -38,12 +31,14 @@ class UsuarioViewModel extends ChangeNotifier {
   String? get mensajeExito => _mensajeExito;
 
   List<Usuario> get _usuariosFiltrados {
+    final query = _filtroTexto.trim().toLowerCase();
     return _usuarios.where((u) {
       final cumpleRol = _filtroRol == null || u.rol == _filtroRol;
-      final query = _filtroTexto.trim().toLowerCase();
-      final cumpleTexto = query.isEmpty ||
+      final cumpleTexto =
+          query.isEmpty ||
           u.nombre.toLowerCase().contains(query) ||
-          u.dni.toLowerCase().contains(query);
+          u.nombreUsuario.toLowerCase().contains(query) ||
+          (u.dni ?? '').toLowerCase().contains(query);
       return cumpleRol && cumpleTexto;
     }).toList();
   }
@@ -51,7 +46,8 @@ class UsuarioViewModel extends ChangeNotifier {
   void cambiarSolicitante(Usuario nuevoSolicitante) {
     _solicitante = nuevoSolicitante;
     _mensajeError = null;
-    _mensajeExito = 'Perfil activo cambiado a: ${nuevoSolicitante.nombre} (${nuevoSolicitante.rol.name})';
+    _mensajeExito =
+        'Perfil activo cambiado a: ${nuevoSolicitante.nombre} (${nuevoSolicitante.rol.name})';
     notifyListeners();
   }
 
@@ -86,12 +82,9 @@ class UsuarioViewModel extends ChangeNotifier {
     try {
       _usuarios = await _repository.listarUsuarios();
       if (_usuarioSeleccionado != null) {
-        _usuarioSeleccionado = _usuarios.firstWhere(
-          (u) => u.id == _usuarioSeleccionado!.id,
-          orElse: () => _usuarios.first,
-        );
-      } else if (_usuarios.isNotEmpty) {
-        _usuarioSeleccionado = _usuarios.first;
+        final id = _usuarioSeleccionado!.id;
+        final i = _usuarios.indexWhere((u) => u.id == id);
+        _usuarioSeleccionado = i == -1 ? null : _usuarios[i];
       }
     } catch (e) {
       _mensajeError = 'Error al cargar usuarios: $e';
@@ -101,36 +94,72 @@ class UsuarioViewModel extends ChangeNotifier {
     }
   }
 
+  /// HU 02.1 - Alta de cuenta. Devuelve null si falla (ver [mensajeError]).
+  Future<UsuarioCreado?> crearUsuario({
+    required String nombre,
+    required String nombreUsuario,
+    required RolUsuario rol,
+    String? dni,
+    String? telefonoContacto,
+    DateTime? fechaNacimiento,
+  }) async {
+    _mensajeError = null;
+    _mensajeExito = null;
+    _cargando = true;
+    notifyListeners();
+
+    try {
+      final creado = await _repository.crearUsuario(
+        solicitante: _solicitante,
+        nombre: nombre,
+        nombreUsuario: nombreUsuario,
+        rol: rol,
+        dni: dni,
+        telefonoContacto: telefonoContacto,
+        fechaNacimiento: fechaNacimiento,
+      );
+      _usuarios = [..._usuarios, creado.usuario];
+      _mensajeExito = 'Cuenta "${creado.usuario.nombreUsuario}" creada.';
+      return creado;
+    } on AccesoDenegadoException catch (e) {
+      _mensajeError = e.mensaje;
+    } on NombreUsuarioDuplicadoException catch (e) {
+      _mensajeError = e.toString();
+    } on ArgumentError catch (e) {
+      _mensajeError = e.message.toString();
+    } on FirebaseAuthException catch (e) {
+      _mensajeError = e.code == 'operation-not-allowed'
+          ? 'Activa "Correo electrónico/contraseña" en Firebase Authentication.'
+          : 'Error al crear la cuenta (${e.code}).';
+    } catch (e) {
+      _mensajeError = 'Error al crear la cuenta: $e';
+    } finally {
+      _cargando = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
   Future<bool> cambiarRol(String usuarioId, RolUsuario nuevoRol) async {
     _mensajeError = null;
     _mensajeExito = null;
-
     try {
       final actualizado = await _repository.cambiarRol(
         solicitante: _solicitante,
         usuarioId: usuarioId,
         nuevoRol: nuevoRol,
       );
-
-      final index = _usuarios.indexWhere((u) => u.id == usuarioId);
-      if (index != -1) {
-        _usuarios[index] = actualizado;
-      }
-      if (_usuarioSeleccionado?.id == usuarioId) {
-        _usuarioSeleccionado = actualizado;
-      }
+      _reemplazar(actualizado);
       _mensajeExito = 'Rol actualizado correctamente a "${nuevoRol.name}".';
       notifyListeners();
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
-      notifyListeners();
-      return false;
     } catch (e) {
       _mensajeError = 'Error al cambiar rol: $e';
-      notifyListeners();
-      return false;
     }
+    notifyListeners();
+    return false;
   }
 
   Future<bool> togglePermiso(
@@ -140,7 +169,6 @@ class UsuarioViewModel extends ChangeNotifier {
   ) async {
     _mensajeError = null;
     _mensajeExito = null;
-
     try {
       final actualizado = conceder
           ? await _repository.concederPermiso(
@@ -153,14 +181,7 @@ class UsuarioViewModel extends ChangeNotifier {
               usuarioId: usuarioId,
               permiso: permiso,
             );
-
-      final index = _usuarios.indexWhere((u) => u.id == usuarioId);
-      if (index != -1) {
-        _usuarios[index] = actualizado;
-      }
-      if (_usuarioSeleccionado?.id == usuarioId) {
-        _usuarioSeleccionado = actualizado;
-      }
+      _reemplazar(actualizado);
       _mensajeExito = conceder
           ? 'Permiso "${permiso.nombre}" concedido.'
           : 'Permiso "${permiso.nombre}" revocado.';
@@ -168,48 +189,43 @@ class UsuarioViewModel extends ChangeNotifier {
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
-      notifyListeners();
-      return false;
     } catch (e) {
       _mensajeError = 'Error al actualizar permiso: $e';
-      notifyListeners();
-      return false;
     }
+    notifyListeners();
+    return false;
   }
 
   Future<bool> restablecerPermisosPorDefecto(String usuarioId) async {
     _mensajeError = null;
     _mensajeExito = null;
-
     try {
       final actual = await _repository.obtenerUsuarioPorId(usuarioId);
       if (actual == null) return false;
-
-      final permisosDefecto = PermisoUsuario.permisosPorDefecto(actual.rol);
       final actualizado = await _repository.actualizarPermisos(
         solicitante: _solicitante,
         usuarioId: usuarioId,
-        nuevosPermisos: permisosDefecto,
+        nuevosPermisos: PermisoUsuario.permisosPorDefecto(actual.rol),
       );
-
-      final index = _usuarios.indexWhere((u) => u.id == usuarioId);
-      if (index != -1) {
-        _usuarios[index] = actualizado;
-      }
-      if (_usuarioSeleccionado?.id == usuarioId) {
-        _usuarioSeleccionado = actualizado;
-      }
-      _mensajeExito = 'Permisos restablecidos a los valores por defecto del rol.';
+      _reemplazar(actualizado);
+      _mensajeExito =
+          'Permisos restablecidos a los valores por defecto del rol.';
       notifyListeners();
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
-      notifyListeners();
-      return false;
     } catch (e) {
       _mensajeError = 'Error al restablecer permisos: $e';
-      notifyListeners();
-      return false;
+    }
+    notifyListeners();
+    return false;
+  }
+
+  void _reemplazar(Usuario actualizado) {
+    final i = _usuarios.indexWhere((u) => u.id == actualizado.id);
+    if (i != -1) _usuarios[i] = actualizado;
+    if (_usuarioSeleccionado?.id == actualizado.id) {
+      _usuarioSeleccionado = actualizado;
     }
   }
 }

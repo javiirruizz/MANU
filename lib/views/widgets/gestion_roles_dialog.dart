@@ -9,11 +9,11 @@ class GestionRolesDialog extends StatefulWidget {
   const GestionRolesDialog({
     super.key,
     required this.repository,
-    this.solicitanteInicial,
+    required this.solicitante,
   });
 
   final UsuarioRepository repository;
-  final Usuario? solicitanteInicial;
+  final Usuario solicitante;
 
   @override
   State<GestionRolesDialog> createState() => _GestionRolesDialogState();
@@ -26,10 +26,7 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
   @override
   void initState() {
     super.initState();
-    _vm = UsuarioViewModel(
-      widget.repository,
-      solicitanteInicial: widget.solicitanteInicial,
-    );
+    _vm = UsuarioViewModel(widget.repository, solicitante: widget.solicitante);
   }
 
   @override
@@ -104,92 +101,7 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                     ),
                     Text(
                       'Gestión de perfiles de usuario y privacidad de la información',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSoft,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Conmutador del solicitante activo (para probar permisos)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.tabTrack,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Sesión activa: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSoft,
-                      ),
-                    ),
-                    DropdownButton<String>(
-                      value: _vm.solicitante.id,
-                      underline: const SizedBox.shrink(),
-                      isDense: true,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'admin_1',
-                          child: Text('Carlos Delgado (Admin)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'profe_1',
-                          child: Text('María Morales (Profesor)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'alum_1',
-                          child: Text('Lucas Gómez (Alumno)'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val == null) return;
-                        if (val == 'admin_1') {
-                          _vm.cambiarSolicitante(
-                            Usuario(
-                              id: 'admin_1',
-                              nombre: 'Carlos Delgado',
-                              dni: '12345678A',
-                              telefonoContacto: '600112233',
-                              fechaNacimiento: DateTime(1985, 3, 14),
-                              rol: RolUsuario.administrador,
-                            ),
-                          );
-                        } else if (val == 'profe_1') {
-                          _vm.cambiarSolicitante(
-                            Usuario(
-                              id: 'profe_1',
-                              nombre: 'María Morales',
-                              dni: '87654321B',
-                              telefonoContacto: '611223344',
-                              fechaNacimiento: DateTime(1990, 7, 22),
-                              rol: RolUsuario.profesor,
-                            ),
-                          );
-                        } else if (val == 'alum_1') {
-                          _vm.cambiarSolicitante(
-                            Usuario(
-                              id: 'alum_1',
-                              nombre: 'Lucas Gómez',
-                              dni: '98765432D',
-                              telefonoContacto: '633445566',
-                              fechaNacimiento: DateTime(2012, 5, 18),
-                              rol: RolUsuario.alumno,
-                            ),
-                          );
-                        }
-                      },
+                      style: TextStyle(fontSize: 13, color: AppColors.textSoft),
                     ),
                   ],
                 ),
@@ -235,33 +147,53 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                         child: Row(
                           children: [
                             ChoiceChip(
-                              label: const Text('Todos', style: TextStyle(fontSize: 11)),
+                              label: const Text(
+                                'Todos',
+                                style: TextStyle(fontSize: 11),
+                              ),
                               selected: _vm.filtroRol == null,
                               onSelected: (_) => _vm.filtrarPorRol(null),
                             ),
                             const SizedBox(width: 4),
                             ChoiceChip(
-                              label: const Text('Admin', style: TextStyle(fontSize: 11)),
-                              selected: _vm.filtroRol == RolUsuario.administrador,
-                              onSelected: (_) => _vm.filtrarPorRol(RolUsuario.administrador),
+                              label: const Text(
+                                'Admin',
+                                style: TextStyle(fontSize: 11),
+                              ),
+                              selected:
+                                  _vm.filtroRol == RolUsuario.administrador,
+                              onSelected: (_) =>
+                                  _vm.filtrarPorRol(RolUsuario.administrador),
                             ),
                             const SizedBox(width: 4),
                             ChoiceChip(
-                              label: const Text('Profesores', style: TextStyle(fontSize: 11)),
+                              label: const Text(
+                                'Profesores',
+                                style: TextStyle(fontSize: 11),
+                              ),
                               selected: _vm.filtroRol == RolUsuario.profesor,
-                              onSelected: (_) => _vm.filtrarPorRol(RolUsuario.profesor),
+                              onSelected: (_) =>
+                                  _vm.filtrarPorRol(RolUsuario.profesor),
                             ),
                             const SizedBox(width: 4),
                             ChoiceChip(
-                              label: const Text('Familiares', style: TextStyle(fontSize: 11)),
+                              label: const Text(
+                                'Familiares',
+                                style: TextStyle(fontSize: 11),
+                              ),
                               selected: _vm.filtroRol == RolUsuario.familiar,
-                              onSelected: (_) => _vm.filtrarPorRol(RolUsuario.familiar),
+                              onSelected: (_) =>
+                                  _vm.filtrarPorRol(RolUsuario.familiar),
                             ),
                             const SizedBox(width: 4),
                             ChoiceChip(
-                              label: const Text('Alumnos', style: TextStyle(fontSize: 11)),
+                              label: const Text(
+                                'Alumnos',
+                                style: TextStyle(fontSize: 11),
+                              ),
                               selected: _vm.filtroRol == RolUsuario.alumno,
-                              onSelected: (_) => _vm.filtrarPorRol(RolUsuario.alumno),
+                              onSelected: (_) =>
+                                  _vm.filtrarPorRol(RolUsuario.alumno),
                             ),
                           ],
                         ),
@@ -273,106 +205,104 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                         child: _vm.cargando
                             ? const Center(child: CircularProgressIndicator())
                             : _vm.usuarios.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'No se encontraron usuarios.',
-                                      style: TextStyle(color: AppColors.textSoft),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    itemCount: _vm.usuarios.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 6),
-                                    itemBuilder: (context, index) {
-                                      final u = _vm.usuarios[index];
-                                      final isSelected = u.id == uSel?.id;
-                                      final rolColor = _colorRol(u.rol);
+                            ? const Center(
+                                child: Text(
+                                  'No se encontraron usuarios.',
+                                  style: TextStyle(color: AppColors.textSoft),
+                                ),
+                              )
+                            : ListView.separated(
+                                itemCount: _vm.usuarios.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 6),
+                                itemBuilder: (context, index) {
+                                  final u = _vm.usuarios[index];
+                                  final isSelected = u.id == uSel?.id;
+                                  final rolColor = _colorRol(u.rol);
 
-                                      return InkWell(
+                                  return InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: () => _vm.seleccionarUsuario(u),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppColors.cardBlue
+                                            : AppColors.surface,
                                         borderRadius: BorderRadius.circular(10),
-                                        onTap: () => _vm.seleccionarUsuario(u),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? AppColors.cardBlue
-                                                : AppColors.surface,
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? AppColors.primary
-                                                  : AppColors.divider,
-                                              width: isSelected ? 1.5 : 1,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.divider,
+                                          width: isSelected ? 1.5 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 18,
+                                            backgroundColor: rolColor
+                                                .withValues(alpha: 0.15),
+                                            child: Icon(
+                                              _iconoRol(u.rol),
+                                              color: rolColor,
+                                              size: 20,
                                             ),
                                           ),
-                                          child: Row(
-                                            children: [
-                                              CircleAvatar(
-                                                radius: 18,
-                                                backgroundColor:
-                                                    rolColor.withValues(alpha: 0.15),
-                                                child: Icon(
-                                                  _iconoRol(u.rol),
-                                                  color: rolColor,
-                                                  size: 20,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      u.nombre,
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 13,
-                                                        color: AppColors.textDark,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                    Text(
-                                                      'DNI: ${u.dni}',
-                                                      style: const TextStyle(
-                                                        fontSize: 11,
-                                                        color: AppColors.textSoft,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 2,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      rolColor.withValues(alpha: 0.12),
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  u.rol.name.toUpperCase(),
-                                                  style: TextStyle(
-                                                    color: rolColor,
-                                                    fontSize: 10,
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  u.nombre,
+                                                  style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                    color: AppColors.textDark,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  'Usuario: ${u.nombreUsuario}',
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: AppColors.textSoft,
                                                   ),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: rolColor.withValues(
+                                                alpha: 0.12,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              u.rol.name.toUpperCase(),
+                                              style: TextStyle(
+                                                color: rolColor,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -401,7 +331,9 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade50,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.red.shade200),
+                                  border: Border.all(
+                                    color: Colors.red.shade200,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
@@ -460,7 +392,9 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.cardBlue.withValues(alpha: 0.5),
+                                color: AppColors.cardBlue.withValues(
+                                  alpha: 0.5,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: AppColors.divider),
                               ),
@@ -490,7 +424,7 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                                           ),
                                         ),
                                         Text(
-                                          'DNI: ${uSel.dni} | Teléfono: ${uSel.telefonoContacto}',
+                                          'DNI: ${uSel.dni ?? '-'} | Teléfono: ${uSel.telefonoContacto ?? '-'}',
                                           style: const TextStyle(
                                             fontSize: 12,
                                             color: AppColors.textSoft,
@@ -518,8 +452,9 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: AppColors.surface,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           border: Border.all(
                                             color: AppColors.primary,
                                           ),
@@ -581,8 +516,8 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                                     tapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                  onPressed: () =>
-                                      _vm.restablecerPermisosPorDefecto(uSel.id),
+                                  onPressed: () => _vm
+                                      .restablecerPermisosPorDefecto(uSel.id),
                                   icon: const Icon(Icons.restore, size: 16),
                                   label: const Text(
                                     'Restablecer por defecto',
@@ -605,8 +540,7 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
 
                                   return SwitchListTile(
                                     dense: true,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 0,
                                     ),

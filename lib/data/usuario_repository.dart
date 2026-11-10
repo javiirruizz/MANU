@@ -1,6 +1,11 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../models/usuario.dart';
+import 'auth_repository.dart';
 
 class AccesoDenegadoException implements Exception {
   const AccesoDenegadoException(this.mensaje);
@@ -10,117 +15,43 @@ class AccesoDenegadoException implements Exception {
   String toString() => mensaje;
 }
 
+class NombreUsuarioDuplicadoException implements Exception {
+  const NombreUsuarioDuplicadoException(this.nombreUsuario);
+  final String nombreUsuario;
+
+  @override
+  String toString() => 'El nombre de usuario "$nombreUsuario" ya está en uso.';
+}
+
+class UsuarioCreado {
+  const UsuarioCreado(this.usuario, this.passwordTemporal);
+  final Usuario usuario;
+  final String passwordTemporal;
+}
+
 class UsuarioRepository {
-  UsuarioRepository({FirebaseFirestore? firestore}) : _db = firestore;
+  UsuarioRepository({FirebaseFirestore? firestore})
+    : _db = firestore ?? FirebaseFirestore.instance;
 
-  final FirebaseFirestore? _db;
+  final FirebaseFirestore _db;
 
-  // Usuarios de prueba
-  static final List<Usuario> _usuariosIniciales = [
-    Usuario(
-      id: 'admin_1',
-      nombre: 'Carlos Delgado',
-      dni: '12345678A',
-      telefonoContacto: '600112233',
-      fechaNacimiento: DateTime(1985, 3, 14),
-      rol: RolUsuario.administrador,
-      puedeEditarPerfil: true,
-    ),
-    Usuario(
-      id: 'profe_1',
-      nombre: 'María Morales',
-      dni: '87654321B',
-      telefonoContacto: '611223344',
-      fechaNacimiento: DateTime(1990, 7, 22),
-      rol: RolUsuario.profesor,
-      puedeEditarPerfil: true,
-    ),
-    Usuario(
-      id: 'fam_1',
-      nombre: 'Laura Sánchez',
-      dni: '45678912C',
-      telefonoContacto: '622334455',
-      fechaNacimiento: DateTime(1988, 11, 5),
-      rol: RolUsuario.familiar,
-      puedeEditarPerfil: false,
-    ),
-    Usuario(
-      id: 'alum_1',
-      nombre: 'Lucas Gómez',
-      dni: '98765432D',
-      telefonoContacto: '633445566',
-      fechaNacimiento: DateTime(2012, 5, 18),
-      rol: RolUsuario.alumno,
-      puedeEditarPerfil: false,
-    ),
-    Usuario(
-      id: 'alum_2',
-      nombre: 'Sofía Ruiz',
-      dni: '54321678E',
-      telefonoContacto: '644556677',
-      fechaNacimiento: DateTime(2013, 9, 30),
-      rol: RolUsuario.alumno,
-      puedeEditarPerfil: false,
-    ),
-  ];
-
-  final List<Usuario> _usuariosLocales = List.of(_usuariosIniciales);
-
-  Future<void> precargarUsuariosEnBD() async {
-    final db = _db;
-    if (db == null) return;
-
-    final snap = await db.collection('usuarios').limit(1).get();
-    if (snap.docs.isNotEmpty) return;
-
-    final batch = db.batch();
-    for (final u in _usuariosIniciales) {
-      final ref = db.collection('usuarios').doc(u.id);
-      batch.set(ref, u.toMap());
-    }
-    await batch.commit();
-  }
-
-  // Lista todos los usuarios registrados y permite filtrar por rol.
+  // Lista todos los usuarios y permite filtrar por rol.
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
-    final db = _db;
-    if (db != null) {
-      Query<Map<String, dynamic>> query = db.collection('usuarios');
-      if (filtroRol != null) {
-        query = query.where('rol', isEqualTo: filtroRol.name);
-      }
-      final snap = await query.get();
-      if (snap.docs.isNotEmpty) {
-        return snap.docs
-            .map((doc) => Usuario.fromMap(doc.id, doc.data()))
-            .toList();
-      }
-    }
-
+    Query<Map<String, dynamic>> query = _db.collection('usuarios');
     if (filtroRol != null) {
-      return _usuariosLocales.where((u) => u.rol == filtroRol).toList();
+      query = query.where('rol', isEqualTo: filtroRol.name);
     }
-    return List.unmodifiable(_usuariosLocales);
+    final snap = await query.get();
+    return snap.docs.map((d) => Usuario.fromMap(d.id, d.data())).toList();
   }
 
-  // Obtiene un usuario específico por su identificador.
   Future<Usuario?> obtenerUsuarioPorId(String id) async {
-    final db = _db;
-    if (db != null) {
-      final doc = await db.collection('usuarios').doc(id).get();
-      if (doc.exists && doc.data() != null) {
-        return Usuario.fromMap(doc.id, doc.data()!);
-      }
-    }
-
-    try {
-      return _usuariosLocales.firstWhere((u) => u.id == id);
-    } catch (_) {
-      return null;
-    }
+    final doc = await _db.collection('usuarios').doc(id).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return Usuario.fromMap(doc.id, doc.data()!);
   }
 
-  // Lanza AccesoDenegado si no tiene permiso
+  // Lanza AccesoDenegadoException si no tiene permiso
   void verificarAcceso({
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
@@ -129,8 +60,9 @@ class UsuarioRepository {
     if (!usuario.tienePermiso(permisoRequerido)) {
       final detalle = accion != null ? ' para realizar: $accion' : '';
       throw AccesoDenegadoException(
-        'Acceso denegado: El usuario "${usuario.nombre}" con rol "${usuario.rol.name}" '
-        'no tiene el permiso "${permisoRequerido.nombre}"$detalle.',
+        'Acceso denegado: el usuario "${usuario.nombre}" con rol '
+        '"${usuario.rol.name}" no tiene el permiso '
+        '"${permisoRequerido.nombre}"$detalle.',
       );
     }
   }
@@ -138,74 +70,148 @@ class UsuarioRepository {
   bool puedeEjecutarAccion({
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
-  }) {
-    return usuario.tienePermiso(permisoRequerido);
+  }) => usuario.tienePermiso(permisoRequerido);
+
+  // ---------------------------------------------------------------------
+  // HU 02.1 - Alta de nuevas cuentas
+  // ---------------------------------------------------------------------
+
+  Future<FirebaseApp> _appSecundaria() async {
+    try {
+      return Firebase.app('secundaria');
+    } catch (_) {
+      return Firebase.initializeApp(
+        name: 'secundaria',
+        options: Firebase.app().options,
+      );
+    }
   }
 
-  /// Modifica el rol de un usuario existente.
-  /// Requiere que [solicitante] tenga permiso de gestión de roles y permisos.
+  String _generarPasswordTemporal([int longitud = 8]) {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    final r = Random.secure();
+    return List.generate(
+      longitud,
+      (_) => chars[r.nextInt(chars.length)],
+    ).join();
+  }
+
+  Future<UsuarioCreado> crearUsuario({
+    required Usuario solicitante,
+    required String nombre,
+    required String nombreUsuario,
+    required RolUsuario rol,
+    String? dni,
+    String? telefonoContacto,
+    DateTime? fechaNacimiento,
+  }) async {
+    // Prueba 3: un alumno (u otro rol sin permiso) queda bloqueado
+    verificarAcceso(
+      usuario: solicitante,
+      permisoRequerido: PermisoUsuario.gestionarUsuarios,
+      accion: 'dar de alta una cuenta',
+    );
+
+    final nu = nombreUsuario.trim().toLowerCase();
+    if (!RegExp(r'^[a-z0-9._-]{3,30}$').hasMatch(nu)) {
+      throw ArgumentError(
+        'El nombre de usuario debe tener entre 3 y 30 caracteres: '
+        'letras sin tildes, números, punto, guion o guion bajo.',
+      );
+    }
+
+    final password = _generarPasswordTemporal();
+
+    // La cuenta se crea en la app secundaria para no cerrar la sesión del admin
+    final auth = FirebaseAuth.instanceFor(app: await _appSecundaria());
+    final UserCredential cred;
+    try {
+      cred = await auth.createUserWithEmailAndPassword(
+        email: AuthRepository.emailDe(nu),
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      // Prueba 2: nombre de usuario repetido
+      if (e.code == 'email-already-in-use') {
+        throw NombreUsuarioDuplicadoException(nu);
+      }
+      rethrow;
+    }
+
+    final usuario = Usuario(
+      id: cred.user!.uid,
+      nombreUsuario: nu,
+      nombre: nombre.trim(),
+      rol: rol,
+      dni: (dni == null || dni.trim().isEmpty) ? null : dni.trim(),
+      telefonoContacto:
+          (telefonoContacto == null || telefonoContacto.trim().isEmpty)
+          ? null
+          : telefonoContacto.trim(),
+      fechaNacimiento: fechaNacimiento,
+      debeCambiarPassword: true,
+    );
+
+    try {
+      // Prueba 1: queda registrada en la BD (usa la sesión del admin)
+      await _db.collection('usuarios').doc(usuario.id).set(usuario.toMap());
+    } catch (_) {
+      await cred.user!.delete(); // evita cuentas "huérfanas" sin ficha
+      rethrow;
+    } finally {
+      await auth.signOut();
+    }
+
+    return UsuarioCreado(usuario, password);
+  }
+
+  // ---------------------------------------------------------------------
+  // Roles y permisos
+  // ---------------------------------------------------------------------
+
   Future<Usuario> cambiarRol({
     required Usuario solicitante,
     required String usuarioId,
     required RolUsuario nuevoRol,
     bool resetearPermisos = true,
   }) async {
-    // Control de acceso para administradores
     verificarAcceso(
       usuario: solicitante,
       permisoRequerido: PermisoUsuario.gestionarRolesYPermisos,
       accion: 'modificar rol de usuario',
     );
 
-    final usuarioActual = await obtenerUsuarioPorId(usuarioId);
-    if (usuarioActual == null) {
+    final actual = await obtenerUsuarioPorId(usuarioId);
+    if (actual == null) {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
     // No se puede quitar al único admin
-    if (usuarioActual.rol == RolUsuario.administrador &&
+    if (actual.rol == RolUsuario.administrador &&
         nuevoRol != RolUsuario.administrador) {
       final todos = await listarUsuarios();
-      final numAdmins =
-          todos.where((u) => u.rol == RolUsuario.administrador).length;
+      final numAdmins = todos
+          .where((u) => u.rol == RolUsuario.administrador)
+          .length;
       if (numAdmins <= 1) {
         throw const AccesoDenegadoException(
-          'Operación no permitida: Debe existir al menos un administrador activo en el sistema.',
+          'Operación no permitida: debe existir al menos un administrador.',
         );
       }
     }
 
     final nuevosPermisos = resetearPermisos
         ? PermisoUsuario.permisosPorDefecto(nuevoRol)
-        : usuarioActual.permisos;
+        : actual.permisos;
 
-    final usuarioActualizado = usuarioActual.copyWith(
+    final actualizado = actual.copyWith(
       rol: nuevoRol,
       permisos: nuevosPermisos,
     );
-
-    // Actualizar en almacenamiento local en memoria
-    final index = _usuariosLocales.indexWhere((u) => u.id == usuarioId);
-    if (index != -1) {
-      _usuariosLocales[index] = usuarioActualizado;
-    } else {
-      _usuariosLocales.add(usuarioActualizado);
-    }
-
-    // Actualizar en Firestore si está conectado
-    final db = _db;
-    if (db != null) {
-      await db
-          .collection('usuarios')
-          .doc(usuarioId)
-          .update(usuarioActualizado.toMap());
-    }
-
-    return usuarioActualizado;
+    await _db.collection('usuarios').doc(usuarioId).update(actualizado.toMap());
+    return actualizado;
   }
 
-  /// Modifica de forma granular el conjunto de permisos de un usuario.
-  /// Requiere que [solicitante] tenga permiso de gestión de roles y permisos.
   Future<Usuario> actualizarPermisos({
     required Usuario solicitante,
     required String usuarioId,
@@ -217,68 +223,47 @@ class UsuarioRepository {
       accion: 'modificar permisos de usuario',
     );
 
-    final usuarioActual = await obtenerUsuarioPorId(usuarioId);
-    if (usuarioActual == null) {
+    final actual = await obtenerUsuarioPorId(usuarioId);
+    if (actual == null) {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
-    final usuarioActualizado = usuarioActual.copyWith(
+    final actualizado = actual.copyWith(
       permisos: Set.unmodifiable(nuevosPermisos),
     );
-
-    final index = _usuariosLocales.indexWhere((u) => u.id == usuarioId);
-    if (index != -1) {
-      _usuariosLocales[index] = usuarioActualizado;
-    } else {
-      _usuariosLocales.add(usuarioActualizado);
-    }
-
-    final db = _db;
-    if (db != null) {
-      await db
-          .collection('usuarios')
-          .doc(usuarioId)
-          .update(usuarioActualizado.toMap());
-    }
-
-    return usuarioActualizado;
+    await _db.collection('usuarios').doc(usuarioId).update(actualizado.toMap());
+    return actualizado;
   }
 
-  /// Concede un permiso específico a un usuario.
   Future<Usuario> concederPermiso({
     required Usuario solicitante,
     required String usuarioId,
     required PermisoUsuario permiso,
   }) async {
-    final usuarioActual = await obtenerUsuarioPorId(usuarioId);
-    if (usuarioActual == null) {
+    final actual = await obtenerUsuarioPorId(usuarioId);
+    if (actual == null) {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
-
-    final nuevos = {...usuarioActual.permisos, permiso};
     return actualizarPermisos(
       solicitante: solicitante,
       usuarioId: usuarioId,
-      nuevosPermisos: nuevos,
+      nuevosPermisos: {...actual.permisos, permiso},
     );
   }
 
-  /// Revoca un permiso específico a un usuario.
   Future<Usuario> revocarPermiso({
     required Usuario solicitante,
     required String usuarioId,
     required PermisoUsuario permiso,
   }) async {
-    final usuarioActual = await obtenerUsuarioPorId(usuarioId);
-    if (usuarioActual == null) {
+    final actual = await obtenerUsuarioPorId(usuarioId);
+    if (actual == null) {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
-
-    final nuevos = usuarioActual.permisos.where((p) => p != permiso).toSet();
     return actualizarPermisos(
       solicitante: solicitante,
       usuarioId: usuarioId,
-      nuevosPermisos: nuevos,
+      nuevosPermisos: actual.permisos.where((p) => p != permiso).toSet(),
     );
   }
 }
