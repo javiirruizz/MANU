@@ -8,10 +8,10 @@ class UsuarioViewModel extends ChangeNotifier {
     _solicitante = solicitanteInicial ??
         Usuario(
           id: 'admin_1',
-          nombre: 'Carlos Delgado (Admin)',
-          dni: '12345678A',
-          telefonoContacto: '600112233',
-          fechaNacimiento: DateTime(1985, 3, 14),
+          nombre: 'Usuario Administrador',
+          dni: '00000001A',
+          telefonoContacto: '600000001',
+          fechaNacimiento: DateTime(1985, 1, 1),
           rol: RolUsuario.administrador,
         );
     cargarUsuarios();

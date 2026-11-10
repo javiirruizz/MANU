@@ -142,15 +142,15 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                       items: const [
                         DropdownMenuItem(
                           value: 'admin_1',
-                          child: Text('Carlos Delgado (Admin)'),
+                          child: Text('Usuario Administrador'),
                         ),
                         DropdownMenuItem(
                           value: 'profe_1',
-                          child: Text('María Morales (Profesor)'),
+                          child: Text('Usuario Profesor'),
                         ),
                         DropdownMenuItem(
                           value: 'alum_1',
-                          child: Text('Lucas Gómez (Alumno)'),
+                          child: Text('Usuario Alumno 1'),
                         ),
                       ],
                       onChanged: (val) {
@@ -159,10 +159,10 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                           _vm.cambiarSolicitante(
                             Usuario(
                               id: 'admin_1',
-                              nombre: 'Carlos Delgado',
-                              dni: '12345678A',
-                              telefonoContacto: '600112233',
-                              fechaNacimiento: DateTime(1985, 3, 14),
+                              nombre: 'Usuario Administrador',
+                              dni: '00000001A',
+                              telefonoContacto: '600000001',
+                              fechaNacimiento: DateTime(1985, 1, 1),
                               rol: RolUsuario.administrador,
                             ),
                           );
@@ -170,10 +170,10 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                           _vm.cambiarSolicitante(
                             Usuario(
                               id: 'profe_1',
-                              nombre: 'María Morales',
-                              dni: '87654321B',
-                              telefonoContacto: '611223344',
-                              fechaNacimiento: DateTime(1990, 7, 22),
+                              nombre: 'Usuario Profesor',
+                              dni: '00000002B',
+                              telefonoContacto: '600000002',
+                              fechaNacimiento: DateTime(1990, 1, 1),
                               rol: RolUsuario.profesor,
                             ),
                           );
@@ -181,10 +181,10 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                           _vm.cambiarSolicitante(
                             Usuario(
                               id: 'alum_1',
-                              nombre: 'Lucas Gómez',
-                              dni: '98765432D',
-                              telefonoContacto: '633445566',
-                              fechaNacimiento: DateTime(2012, 5, 18),
+                              nombre: 'Usuario Alumno 1',
+                              dni: '00000004D',
+                              telefonoContacto: '600000004',
+                              fechaNacimiento: DateTime(2012, 1, 1),
                               rol: RolUsuario.alumno,
                             ),
                           );
