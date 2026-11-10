@@ -54,7 +54,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   String? _filtroAlumnoId;
-  String? _filtroAula;
   final _filtroAulaCtrl = TextEditingController();
 
   // ---- Tarea en Edición ----
@@ -539,6 +538,49 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                         fontSize: 12,
                                       ),
                                     ),
+                                    const SizedBox(height: 6),
+                                    Builder(
+                                      builder: (_) {
+                                        final ids = _filtroAlumnoId != null
+                                            ? [_filtroAlumnoId!]
+                                            : tarea.alumnoIds;
+                                        final hechos = ids
+                                            .where(tarea.estaCompletadaPor)
+                                            .length;
+                                        final todas =
+                                            ids.isNotEmpty &&
+                                            hechos == ids.length;
+                                        return Row(
+                                          children: [
+                                            Icon(
+                                              todas
+                                                  ? Icons.check_circle
+                                                  : Icons
+                                                        .radio_button_unchecked,
+                                              size: 16,
+                                              color: todas
+                                                  ? AppColors.greenDark
+                                                  : AppColors.textSoft,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              todas
+                                                  ? 'Completada'
+                                                  : hechos > 0
+                                                  ? 'Completada por $hechos de ${ids.length}'
+                                                  : 'Pendiente',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: todas
+                                                    ? AppColors.greenDark
+                                                    : AppColors.textSoft,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ),
@@ -860,7 +902,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
 
     if (_tipoAsignacion == TipoAsignacion.individual) {
       return DropdownButtonFormField<String>(
-        value: _alumnoSeleccionadoId,
+        initialValue: _alumnoSeleccionadoId,
         decoration: InputDecoration(
           labelText: 'Selecciona al Alumno *',
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

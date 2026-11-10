@@ -14,7 +14,9 @@ class TareaRepository {
         .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(finDia))
         .get();
 
-    return snapshot.docs.map((doc) => Tarea.fromMap(doc.id, doc.data())).toList();
+    return snapshot.docs
+        .map((doc) => Tarea.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
   Future<void> guardarTarea(Tarea tarea) async {
@@ -26,10 +28,7 @@ class TareaRepository {
   }
 
   Future<void> actualizarTarea(Tarea tarea) async {
-    await _firestore
-        .collection('tareas')
-        .doc(tarea.id)
-        .update(tarea.toMap());
+    await _firestore.collection('tareas').doc(tarea.id).update(tarea.toMap());
   }
 
   Future<void> eliminarTarea(String id) async {
@@ -43,5 +42,66 @@ class TareaRepository {
       batch.set(docRef, tarea.toMap());
     }
     await batch.commit();
+  }
+
+  /// Tareas del alumno para un día, en tiempo real.
+  /// Filtramos la fecha en cliente para no necesitar un índice compuesto.
+  Stream<List<Tarea>> streamTareasAlumno(String alumnoId, DateTime fecha) {
+    return _firestore
+        .collection('tareas')
+        .where('alumnoIds', arrayContains: alumnoId)
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs
+                  .map((d) => Tarea.fromMap(d.id, d.data()))
+                  .where(
+                    (t) =>
+                        t.fecha.year == fecha.year &&
+                        t.fecha.month == fecha.month &&
+                        t.fecha.day == fecha.day,
+                  )
+                  .toList()
+                ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio)),
+        );
+  }
+
+  Stream<List<Tarea>> streamTareasPorFecha(DateTime fecha) {
+    final inicio = DateTime(fecha.year, fecha.month, fecha.day);
+    final fin = inicio.add(const Duration(days: 1));
+    return _firestore
+        .collection('tareas')
+        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+        .where('fecha', isLessThan: Timestamp.fromDate(fin))
+        .snapshots()
+        .map((s) => s.docs.map((d) => Tarea.fromMap(d.id, d.data())).toList());
+  }
+
+  Future<void> marcarCompletada(String tareaId, String alumnoId) {
+    return _firestore.collection('tareas').doc(tareaId).update({
+      'completadaPor.$alumnoId': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> desmarcarCompletada(String tareaId, String alumnoId) {
+    return _firestore.collection('tareas').doc(tareaId).update({
+      'completadaPor.$alumnoId': FieldValue.delete(),
+    });
+  }
+
+  Stream<List<Tarea>> streamTareasAlumnoDesde(String alumnoId, DateTime desde) {
+    final inicio = DateTime(desde.year, desde.month, desde.day);
+    return _firestore
+        .collection('tareas')
+        .where('alumnoIds', arrayContains: alumnoId)
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs
+                  .map((d) => Tarea.fromMap(d.id, d.data()))
+                  .where((t) => !t.fecha.isBefore(inicio))
+                  .toList()
+                ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio)),
+        );
   }
 }

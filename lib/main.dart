@@ -14,29 +14,52 @@ import 'views/agenda_page.dart';
 import 'views/cambiar_password_page.dart';
 import 'views/login_page.dart';
 
+import 'data/notification_service.dart';
+import 'data/tarea_repository.dart';
+import 'data/usuario_repository.dart';
+import 'viewmodels/gestor_tareas_view_model.dart';
+import 'views/profesor/gestor_tareas_screen.dart';
+import 'models/usuario.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final notificaciones = NotificationService();
+  await notificaciones.init();
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
 
-  runApp(const MiAgendaApp());
+  runApp(MiAgendaApp(notificaciones: notificaciones));
 }
 
 class MiAgendaApp extends StatelessWidget {
-  const MiAgendaApp({super.key});
+  const MiAgendaApp({super.key, required this.notificaciones});
+
+  final NotificationService notificaciones;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository())),
-        ChangeNotifierProvider(
-          create: (_) => AgendaViewModel(AgendaRepository()),
+        ChangeNotifierProxyProvider<AuthViewModel, AgendaViewModel>(
+          create: (_) => AgendaViewModel(
+            AgendaRepository(),
+            TareaRepository(),
+            notificaciones,
+          ),
+          update: (_, auth, agenda) {
+            final u = auth.usuario;
+            final alumnoId = (u != null && u.rol == RolUsuario.alumno)
+                ? u.id
+                : null;
+            Future.microtask(() => agenda!.setAlumno(alumnoId));
+            return agenda!;
+          },
         ),
       ],
       child: MaterialApp(
@@ -65,6 +88,20 @@ class AuthGate extends StatelessWidget {
     if (usuario == null) return const LoginPage();
     if (usuario.debeCambiarPassword) return const CambiarPasswordPage();
     if (usuario.esAdministrador) return const AdminHomePage();
+    if (usuario.esAdministrador) {
+      return const AdminHomePage();
+    }
+
+    if (usuario.rol == RolUsuario.profesor) {
+      return GestorTareasScreen(
+        profesorId: usuario.id,
+        viewModel: GestorTareasViewModel(
+          tareaRepo: TareaRepository(),
+          usuarioRepo: UsuarioRepository(),
+        ),
+      );
+    }
+
     return const AgendaPage();
   }
 }

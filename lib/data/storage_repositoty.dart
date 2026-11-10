@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -12,7 +11,8 @@ class StorageRepository {
     if (image == null) return null;
 
     // 2. Crear una referencia en Firebase Storage
-    final String fileName = 'tareas/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+    final String fileName =
+        'tareas/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
     final Reference ref = _storage.ref().child(fileName);
 
     // 3. Subir el archivo

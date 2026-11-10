@@ -4,10 +4,13 @@ import 'package:audioplayers/audioplayers.dart';
 class AudioService {
   final FlutterTts _tts = FlutterTts();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _completed = AudioPlayer();
 
   AudioService() {
     _tts.setLanguage("es-ES"); // Español por defecto
-    _tts.setSpeechRate(0.4);   // Velocidad un poco más lenta para mejor accesibilidad
+    _tts.setSpeechRate(
+      0.4,
+    ); // Velocidad un poco más lenta para mejor accesibilidad
   }
 
   Future<void> leerTexto(String texto) async {
@@ -23,5 +26,10 @@ class AudioService {
   Future<void> detenerTodo() async {
     await _tts.stop();
     await _audioPlayer.stop();
+  }
+
+  Future<void> reproducirExito() async {
+    await _completed.stop();
+    await _completed.play(AssetSource('audio/exito.mp3'));
   }
 }
