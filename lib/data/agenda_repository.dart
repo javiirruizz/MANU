@@ -14,6 +14,7 @@ class AgendaRepository {
     MealItem(
       label: '1º PLATO',
       name: 'Lentejas con verduras',
+      pictograma: 'lentejas',
       icon: Icons.restaurant_menu,
       iconColor: AppColors.orange,
       iconBackground: AppColors.orangeSoft,
@@ -21,6 +22,7 @@ class AgendaRepository {
     MealItem(
       label: '2º PLATO',
       name: 'Pechuga con patatas',
+      pictograma: 'pollo',
       icon: Icons.dinner_dining,
       iconColor: AppColors.primary,
       iconBackground: AppColors.badge,
@@ -28,6 +30,7 @@ class AgendaRepository {
     MealItem(
       label: 'POSTRE',
       name: 'Plátano de Canarias',
+      pictograma: 'plátano',
       icon: Icons.eco,
       iconColor: AppColors.green,
       iconBackground: AppColors.greenSoft,

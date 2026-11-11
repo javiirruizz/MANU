@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
 import '../viewmodels/auth_view_model.dart';
+import 'widgets/pictograma_imagen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -31,6 +32,21 @@ class _LoginPageState extends State<LoginPage> {
     await context.read<AuthViewModel>().iniciarSesion(usuario, pass);
   }
 
+  InputDecoration _decoracion(
+    String etiqueta,
+    IconData icono, {
+    Widget? sufijo,
+  }) {
+    return InputDecoration(
+      labelText: etiqueta,
+      labelStyle: const TextStyle(fontSize: 22),
+      prefixIcon: Icon(icono, size: 32),
+      suffixIcon: sufijo,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
@@ -40,55 +56,67 @@ class _LoginPageState extends State<LoginPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 640),
             child: Card(
               color: AppColors.surface,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(28),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(40),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Center(
+                      child: PictogramaImagen(
+                        consulta: 'agenda',
+                        size: 120,
+                        iconoReserva: Icons.menu_book_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     const Text(
                       'Mi Agenda',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 48,
                         fontWeight: FontWeight.w800,
                         color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     const Text(
-                      'Inicia sesión para continuar',
+                      'Escribe tu nombre de usuario y tu contraseña',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSoft),
+                      style: TextStyle(fontSize: 22, color: AppColors.textSoft),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     TextField(
                       controller: _usuarioCtrl,
                       textInputAction: TextInputAction.next,
                       autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de usuario',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(),
+                      style: const TextStyle(fontSize: 26),
+                      decoration: _decoracion(
+                        'Nombre de usuario',
+                        Icons.person_outline,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
                     TextField(
                       controller: _passCtrl,
                       obscureText: _ocultar,
                       onSubmitted: (_) => _entrar(),
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
+                      style: const TextStyle(fontSize: 26),
+                      decoration: _decoracion(
+                        'Contraseña',
+                        Icons.lock_outline,
+                        sufijo: IconButton(
+                          iconSize: 32,
+                          tooltip: _ocultar
+                              ? 'Mostrar contraseña'
+                              : 'Ocultar contraseña',
                           icon: Icon(
                             _ocultar ? Icons.visibility : Icons.visibility_off,
                           ),
@@ -97,27 +125,43 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     if (auth.error != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Text(
                         auth.error!,
-                        style: const TextStyle(color: Colors.red),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 28),
                     FilledButton(
                       onPressed: auth.cargando ? null : _entrar,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size.fromHeight(76),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                       child: auth.cargando
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              height: 30,
+                              width: 30,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Text('Entrar'),
+                          : const Text(
+                              'ENTRAR',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                     ),
                   ],
                 ),

@@ -104,4 +104,37 @@ class TareaRepository {
                 ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio)),
         );
   }
+
+  /// Sustituye el horario de ejemplo del rango [desde, hasta) por [tareas].
+  /// Borra antes las tareas de ejemplo anteriores (ids "ejemplo_..." y las 4
+  /// del primer ejemplo) para no duplicar. No toca las demás.
+  Future<void> reemplazarHorarioEjemplo({
+    required List<Tarea> tareas,
+    required DateTime desde,
+    required DateTime hasta,
+  }) async {
+    const antiguas = {
+      'Asamblea matinal',
+      'Recreo y patio',
+      'Taller de tareas',
+      'Comedor y aseo',
+    };
+    final snap = await _firestore
+        .collection('tareas')
+        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
+        .where('fecha', isLessThan: Timestamp.fromDate(hasta))
+        .get();
+
+    final batch = _firestore.batch();
+    for (final d in snap.docs) {
+      if (d.id.startsWith('ejemplo_') ||
+          antiguas.contains(d.data()['nombre'])) {
+        batch.delete(d.reference);
+      }
+    }
+    for (final t in tareas) {
+      batch.set(_firestore.collection('tareas').doc(t.id), t.toMap());
+    }
+    await batch.commit();
+  }
 }

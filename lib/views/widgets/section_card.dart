@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 
 /// Tarjeta blanca con cabecera (icono, título y etiqueta opcional).
-/// El [child] ocupa todo el espacio restante.
+/// Con [expand] = true (por defecto) el [child] ocupa todo el espacio restante;
+/// con false, la tarjeta solo ocupa lo que necesita su contenido.
 class SectionCard extends StatelessWidget {
   const SectionCard({
     super.key,
@@ -10,12 +11,14 @@ class SectionCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.badge,
+    this.expand = true,
   });
 
   final IconData icon;
   final String title;
   final String? badge;
   final Widget child;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -26,24 +29,29 @@ class SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.primary, size: 22),
+              Icon(icon, color: AppColors.primary, size: 24),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
-              const Spacer(),
               if (badge != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.badge,
                     borderRadius: BorderRadius.circular(20),
@@ -51,7 +59,7 @@ class SectionCard extends StatelessWidget {
                   child: Text(
                     badge!,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
@@ -62,7 +70,7 @@ class SectionCard extends StatelessWidget {
           const SizedBox(height: 10),
           const Divider(height: 1, color: AppColors.divider),
           const SizedBox(height: 12),
-          Expanded(child: child),
+          if (expand) Expanded(child: child) else child,
         ],
       ),
     );

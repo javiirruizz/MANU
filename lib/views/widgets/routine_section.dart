@@ -4,9 +4,19 @@ import 'package:provider/provider.dart';
 import '../../core/app_colors.dart';
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
+import 'pictograma_imagen.dart';
 
-class RoutineSection extends StatelessWidget {
+/// Horario del día: es la parte principal de la pantalla.
+class RoutineSection extends StatefulWidget {
   const RoutineSection({super.key});
+
+  @override
+  State<RoutineSection> createState() => _RoutineSectionState();
+}
+
+class _RoutineSectionState extends State<RoutineSection> {
+  static const _altoTarjeta = 150.0;
+  static const _separacion = 12.0;
 
   static const _etiquetas = {
     FiltroTareas.todas: 'Todas',
@@ -22,71 +32,106 @@ class RoutineSection extends StatelessWidget {
     FiltroTareas.completadas: 'Todavía no has completado ninguna tarea.',
   };
 
+  final _scroll = ScrollController();
+  FiltroTareas? _filtroDesplazado;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Lleva la lista hasta la tarea actual (una vez por filtro).
+  void _irATareaActual(List<Tarea> tareas, AgendaViewModel vm) {
+    if (_filtroDesplazado == vm.filtro) return;
+    final i = tareas.indexWhere(vm.esActual);
+    if (i == -1) return;
+    _filtroDesplazado = vm.filtro;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final destino = (i * (_altoTarjeta + _separacion)).clamp(
+        0.0,
+        _scroll.position.maxScrollExtent,
+      );
+      _scroll.animateTo(
+        destino,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              const Icon(Icons.schedule, color: AppColors.primary, size: 32),
+              const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'Mi rutina',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  'Mi horario',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
                 ),
               ),
-              Text(
-                '${vm.completedCount}/${vm.totalCount}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Leer en voz alta',
-                icon: const Icon(Icons.volume_up_outlined),
-                onPressed: () => vm.readAloud(),
+                decoration: BoxDecoration(
+                  color: AppColors.badge,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${vm.completedCount}/${vm.totalCount}',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 for (final f in FiltroTareas.values) ...[
                   ChoiceChip(
-                    label: Text(
-                      _etiquetas[f]!,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    label: Text(_etiquetas[f]!),
+                    labelStyle: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      color: vm.filtro == f ? Colors.white : AppColors.textDark,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
                     ),
                     selected: vm.filtro == f,
                     selectedColor: AppColors.primary,
-                    labelStyle: TextStyle(
-                      color: vm.filtro == f ? Colors.white : AppColors.textDark,
-                    ),
                     showCheckmark: false,
                     onSelected: (_) => vm.setFiltro(f),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Expanded(child: _contenido(vm)),
         ],
       ),
@@ -99,11 +144,14 @@ class RoutineSection extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(vm.error!, style: const TextStyle(color: AppColors.textSoft)),
+            Text(
+              vm.error!,
+              style: const TextStyle(fontSize: 18, color: AppColors.textSoft),
+            ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: vm.clearError,
-              child: const Text('Reintentar'),
+              child: const Text('Reintentar', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),
@@ -116,24 +164,30 @@ class RoutineSection extends StatelessWidget {
         child: Text(
           _vacios[vm.filtro]!,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 18, color: AppColors.textSoft),
+          style: const TextStyle(fontSize: 22, color: AppColors.textSoft),
         ),
       );
     }
 
+    _irATareaActual(tareas, vm);
+
     return ListView.separated(
+      controller: _scroll,
       itemCount: tareas.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: _separacion),
       itemBuilder: (context, i) {
         final t = tareas[i];
-        return _TareaCard(
-          tarea: t,
-          actual: vm.esActual(t),
-          completada: vm.esCompletada(t),
-          onToggle: () => vm.toggleTask(t.id),
-          onAudio: t.audioUrl == null
-              ? null
-              : () => vm.playTaskAudio(t.audioUrl!),
+        return SizedBox(
+          height: _altoTarjeta,
+          child: _TareaCard(
+            tarea: t,
+            actual: vm.esActual(t),
+            completada: vm.esCompletada(t),
+            onToggle: () => vm.toggleTask(t.id),
+            onAudio: t.audioUrl == null
+                ? null
+                : () => vm.playTaskAudio(t.audioUrl!),
+          ),
         );
       },
     );
@@ -158,36 +212,40 @@ class _TareaCard extends StatelessWidget {
   static String _hora(DateTime d) =>
       '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-  String? get _pictoUrl {
-    if (tarea.pictogramas.isNotEmpty)
-      return tarea.pictogramas.first.urlResuelta;
-    final id = tarea.pictogramaId;
-    if (id == null) return null;
-    return 'https://static.arasaac.org/pictograms/$id/${id}_300.png';
-  }
-
   @override
   Widget build(BuildContext context) {
+    final url = tarea.pictogramas.isNotEmpty
+        ? tarea.pictogramas.first.urlResuelta
+        : null;
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: actual
             ? AppColors.cardBlue
             : completada
             ? AppColors.background
             : AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: actual ? AppColors.primary : AppColors.divider,
-          width: actual ? 3 : 1,
+          width: actual ? 4 : 1.5,
         ),
       ),
       child: Row(
         children: [
-          _Pictograma(url: _pictoUrl),
-          const SizedBox(width: 12),
+          PictogramaImagen(
+            url: url,
+            id: tarea.pictogramaId,
+            consulta: tarea.nombre,
+            size: 118,
+            iconoReserva: Icons.event_note_outlined,
+            opacidad: completada ? 0.5 : 1,
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -195,27 +253,27 @@ class _TareaCard extends StatelessWidget {
                     Text(
                       '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.primary,
                       ),
                     ),
                     if (actual) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
+                          horizontal: 12,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Text(
                           'AHORA',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -223,11 +281,12 @@ class _TareaCard extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 2),
                 Text(
                   tarea.nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 34,
                     fontWeight: FontWeight.w800,
                     color: completada ? AppColors.textSoft : AppColors.textDark,
                   ),
@@ -235,10 +294,10 @@ class _TareaCard extends StatelessWidget {
                 if (tarea.descripcion.isNotEmpty)
                   Text(
                     tarea.descripcion,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 20,
                       color: AppColors.textSoft,
                     ),
                   ),
@@ -248,10 +307,11 @@ class _TareaCard extends StatelessWidget {
           if (onAudio != null)
             IconButton(
               tooltip: 'Escuchar',
+              iconSize: 34,
               icon: const Icon(Icons.volume_up_outlined),
               onPressed: onAudio,
             ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Semantics(
             button: true,
             label: completada ? 'Marcar como pendiente' : 'Marcar como hecha',
@@ -259,8 +319,8 @@ class _TareaCard extends StatelessWidget {
               customBorder: const CircleBorder(),
               onTap: onToggle,
               child: Container(
-                width: 48,
-                height: 48,
+                width: 84,
+                height: 84,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: completada ? AppColors.green : AppColors.checkEmpty,
@@ -268,43 +328,13 @@ class _TareaCard extends StatelessWidget {
                 child: Icon(
                   Icons.check,
                   color: completada ? Colors.white : AppColors.surface,
-                  size: 28,
+                  size: 52,
                 ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Pictograma extends StatelessWidget {
-  const _Pictograma({this.url});
-  final String? url;
-
-  @override
-  Widget build(BuildContext context) {
-    const icono = Icon(
-      Icons.event_note_outlined,
-      color: AppColors.primary,
-      size: 32,
-    );
-    return Container(
-      width: 64,
-      height: 64,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.badge,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: url == null
-          ? icono
-          : Image.network(
-              url!,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => icono,
-            ),
     );
   }
 }

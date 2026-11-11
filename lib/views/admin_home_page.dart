@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
+import '../data/horario_ejemplo.dart';
 import '../data/tarea_repository.dart';
 import '../data/usuario_repository.dart';
 import '../models/usuario.dart';
@@ -15,6 +16,36 @@ import 'widgets/gestion_roles_dialog.dart';
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
+
+  Future<void> _cargarHorario(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Creando el horario de la semana...')),
+    );
+    try {
+      final alumnos = await UsuarioRepository().getAlumnos();
+      if (alumnos.isEmpty) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Primero crea algún alumno en Gestión de usuarios.'),
+          ),
+        );
+        return;
+      }
+      final n = await cargarHorarioEjemplo(
+        alumnoIds: alumnos.map((a) => a.id).toList(),
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Horario creado: $n tareas para ${alumnos.length} alumno(s).',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +166,14 @@ class AdminHomePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
+                if (user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
+                  gap,
+                  TextButton.icon(
+                    onPressed: () => _cargarHorario(context),
+                    icon: const Icon(Icons.science_outlined),
+                    label: const Text('Cargar horario de ejemplo (semana)'),
+                  ),
+                ],
               ],
             ),
           ),

@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import '../../core/app_colors.dart';
 import '../../models/meal_item.dart';
 import '../../viewmodels/agenda_view_model.dart';
+import 'pictograma_imagen.dart';
 import 'section_card.dart';
 
-/// Columna "Menú escolar".
+/// Menú del comedor: compacto, con un pictograma por plato.
 class MenuSection extends StatelessWidget {
   const MenuSection({super.key});
 
@@ -15,13 +16,15 @@ class MenuSection extends StatelessWidget {
 
     return SectionCard(
       icon: Icons.restaurant,
-      title: 'MENÚ ESCOLAR',
+      title: 'MENÚ',
       badge: 'Hoy',
+      expand: false,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          for (final meal in vm.meals) _MealTile(meal: meal),
-          _ReminderCard(text: vm.reminder),
+          for (var i = 0; i < vm.meals.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _MealTile(meal: vm.meals[i]),
+          ],
         ],
       ),
     );
@@ -38,87 +41,43 @@ class _MealTile extends StatelessWidget {
       label: '${meal.label}: ${meal.name}',
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.all(25),
         decoration: BoxDecoration(
           color: AppColors.cardBlue,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: meal.iconBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(meal.icon, color: meal.iconColor, size: 22),
+            PictogramaImagen(
+              consulta: meal.pictograma ?? meal.name,
+              size: 90,
+              iconoReserva: meal.icon,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(meal.label,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      )),
-                  Text(meal.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text(
+                    meal.label,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    meal.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 19,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.check_circle_outline, size: 22),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ReminderCard extends StatelessWidget {
-  const _ReminderCard({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardBlue,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.primary, width: 2.5),
-            ),
-            child: const Icon(Icons.edit_note, color: AppColors.orange, size: 28),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('RECUERDA HOY',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    )),
-                const SizedBox(height: 4),
-                Text(text, style: const TextStyle(fontSize: 13)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
