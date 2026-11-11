@@ -30,7 +30,7 @@ class AgendaViewModel extends ChangeNotifier {
        _reminder = repository.getReminder() {
     // Reloj interno: cada minuto recalcula la tarea actual (Archivo 2)
     _reloj = Timer.periodic(const Duration(minutes: 1), (_) => _tick());
-    _iniciarStream();
+    _inicializarAgenda();
   }
 
   static const _weekdays = [
@@ -137,6 +137,21 @@ class AgendaViewModel extends ChangeNotifier {
     if (m <= 5) return 'Primavera';
     if (m <= 8) return 'Verano';
     return 'Otoño';
+  }
+
+  Future<void> _inicializarAgenda() async {
+    try {
+      // Inicializar las notificaciones
+      await _notificaciones.init();
+    } catch (e) {
+      debugPrint('Error al inicializar notificaciones: $e');
+    }
+
+    // Evitar continuar si se ha cerrado la pantalla
+    if (_disposed) return;
+
+    // Cargar las tareas cuando termine la inicialización
+    _iniciarStream();
   }
 
   // ---- Carga (Stream) y Reloj ----
