@@ -8,6 +8,7 @@ class MealItem {
     required this.icon,
     required this.iconColor,
     required this.iconBackground,
+    this.pictograma,
   });
 
   final String label; // "1º PLATO"
@@ -15,4 +16,5 @@ class MealItem {
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;
+  final String? pictograma;
 }

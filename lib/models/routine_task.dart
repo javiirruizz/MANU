@@ -35,7 +35,7 @@ class RoutineTask {
         iconColor: iconColor,
         iconBackground: iconBackground,
         completed: completed ?? this.completed,
-        imageUrl: imageUrl ?? this.imageUrl,
-        audioUrl: audioUrl ?? this.audioUrl,
+        imageUrl: imageUrl ?? imageUrl,
+        audioUrl: audioUrl ?? audioUrl,
       );
 }

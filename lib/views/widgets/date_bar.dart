@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_colors.dart';
 import '../../viewmodels/agenda_view_model.dart';
+import 'pictograma_imagen.dart';
 
-/// Barra con el día, la fecha, la estación y los botones Mañana/Tarde/Escuchar.
+/// "Hoy es..." con día, fecha y estación, cada uno con su pictograma.
 class DateBar extends StatelessWidget {
   const DateBar({super.key});
 
@@ -12,75 +13,57 @@ class DateBar extends StatelessWidget {
     final vm = context.watch<AgendaViewModel>();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
-          _Chip(
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    vm.weekdayInitial,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _Bloque(
+                    picto: const PictogramaImagen(
+                      consulta: 'semana',
+                      size: 64,
+                      iconoReserva: Icons.view_week_outlined,
                     ),
+                    titulo: vm.weekdayName,
+                    detalle: vm.dayNote,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(vm.weekdayName,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                    Text(vm.dayNote,
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSoft)),
-                  ],
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  _Bloque(
+                    picto: const PictogramaImagen(
+                      consulta: 'calendario',
+                      size: 64,
+                      iconoReserva: Icons.calendar_month,
+                    ),
+                    titulo: '${vm.dayNumber} de ${vm.monthName}',
+                    detalle: '${vm.year}',
+                  ),
+                  const SizedBox(width: 12),
+                  _Bloque(
+                    picto: PictogramaImagen(
+                      consulta: vm.season.toLowerCase(),
+                      size: 64,
+                      iconoReserva: Icons.filter_drama_outlined,
+                    ),
+                    titulo: vm.season,
+                    detalle: 'Estación',
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 10),
-          _Chip(
-            child: Row(
-              children: [
-                Text('${vm.dayNumber}',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 26)),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(vm.monthName,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                    Text('${vm.year}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSoft)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Icon(Icons.filter_drama_outlined, color: AppColors.primary, size: 22),
-          const SizedBox(width: 6),
-          Text(vm.season, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-          const Spacer(),
+          const SizedBox(width: 12),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppColors.tabTrack,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
@@ -102,15 +85,19 @@ class DateBar extends StatelessWidget {
           const SizedBox(width: 12),
           FilledButton.icon(
             onPressed: vm.readAloud,
-            icon: const Icon(Icons.volume_up_outlined, size: 20),
-            label: const Text('Escuchar',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            icon: const Icon(Icons.volume_up_outlined, size: 28),
+            label: const Text(
+              'Escuchar',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+            ),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.greenLight,
               foregroundColor: AppColors.greenDark,
-              minimumSize: const Size(0, 46),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              minimumSize: const Size(0, 64),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ],
@@ -119,19 +106,50 @@ class DateBar extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.child});
-  final Widget child;
+class _Bloque extends StatelessWidget {
+  const _Bloque({
+    required this.picto,
+    required this.titulo,
+    required this.detalle,
+  });
+
+  final Widget picto;
+  final String titulo;
+  final String detalle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: AppColors.chip,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: child,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          picto,
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 24,
+                ),
+              ),
+              Text(
+                detalle,
+                style: const TextStyle(fontSize: 15, color: AppColors.textSoft),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
     );
   }
 }
@@ -159,18 +177,24 @@ class _PeriodButton extends StatelessWidget {
       excludeSemantics: true,
       child: Material(
         color: selected ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             child: Row(
               children: [
-                Icon(icon, size: 18, color: color),
-                const SizedBox(width: 6),
-                Text(label,
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: color)),
+                Icon(icon, size: 24, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: color,
+                  ),
+                ),
               ],
             ),
           ),

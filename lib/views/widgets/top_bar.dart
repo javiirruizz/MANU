@@ -7,6 +7,7 @@ import 'gestion_roles_dialog.dart';
 import 'pictograma_selector_dialog.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_view_model.dart';
+import '../../models/usuario.dart';
 
 /// Barra superior: logo, pestañas y accesos rápidos.
 class TopBar extends StatelessWidget {
@@ -23,6 +24,13 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    final usuario = auth.usuario;
+    final puedeRoles =
+        usuario?.tienePermiso(PermisoUsuario.gestionarRolesYPermisos) ?? false;
+    final puedePictos =
+        usuario?.tienePermiso(PermisoUsuario.gestionarPictogramas) ?? false;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -32,8 +40,8 @@ class TopBar extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(12),
@@ -44,7 +52,7 @@ class TopBar extends StatelessWidget {
           const Text(
             'Mi Agenda',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
               color: AppColors.primary,
             ),
@@ -71,62 +79,68 @@ class TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 20),
-          _SquareButton(
-            icon: Icons.admin_panel_settings_outlined,
-            tooltip: 'Gestión de Roles y Permisos (HU 03)',
-            background: AppColors.tabTrack,
-            color: AppColors.primary,
-            onTap: () async {
-              final usuario = context.read<AuthViewModel>().usuario;
-              if (usuario == null) return;
-              await showDialog(
-                context: context,
-                builder: (_) => GestionRolesDialog(
-                  repository: UsuarioRepository(),
-                  solicitante: usuario,
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          _SquareButton(
-            icon: Icons.photo_library_outlined,
-            tooltip: 'Biblioteca de Pictogramas (HU 05)',
-            background: AppColors.badge,
-            color: AppColors.primary,
-            onTap: () async {
-              final seleccionado = await showDialog<Pictograma>(
-                context: context,
-                builder: (_) => PictogramaSelectorDialog(
-                  repository: PictogramaRepository(),
-                ),
-              );
-              if (seleccionado != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Pictograma seleccionado: ${seleccionado.nombre}',
-                    ),
-                    backgroundColor: AppColors.primary,
+          if (puedeRoles) ...[
+            _SquareButton(
+              icon: Icons.admin_panel_settings_outlined,
+              tooltip: 'Gestión de Roles y Permisos (HU 03)',
+              background: AppColors.tabTrack,
+              color: AppColors.primary,
+              onTap: () async {
+                final usuario = context.read<AuthViewModel>().usuario;
+                if (usuario == null) return;
+                await showDialog(
+                  context: context,
+                  builder: (_) => GestionRolesDialog(
+                    repository: UsuarioRepository(),
+                    solicitante: usuario,
                   ),
                 );
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-          const _SquareButton(
-            icon: Icons.volume_up_outlined,
-            tooltip: 'Voz',
-            background: AppColors.greenLight,
-            color: AppColors.greenDark,
-          ),
-          const SizedBox(width: 8),
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (puedePictos) ...[
+            _SquareButton(
+              icon: Icons.photo_library_outlined,
+              tooltip: 'Biblioteca de Pictogramas (HU 05)',
+              background: AppColors.badge,
+              color: AppColors.primary,
+              onTap: () async {
+                final seleccionado = await showDialog<Pictograma>(
+                  context: context,
+                  builder: (_) => PictogramaSelectorDialog(
+                    repository: PictogramaRepository(),
+                  ),
+                );
+                if (seleccionado != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Pictograma seleccionado: ${seleccionado.nombre}',
+                      ),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                }
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
           const _SquareButton(
             icon: Icons.settings_outlined,
             tooltip: 'Ajustes',
           ),
           const SizedBox(width: 8),
-          const _SquareButton(icon: Icons.person_outline, tooltip: 'Perfil'),
+          _SquareButton(
+            icon: Icons.logout,
+            tooltip: 'Cerrar sesión',
+            onTap: () {
+              final nav = Navigator.of(context);
+              final authVm = context.read<AuthViewModel>();
+              nav.popUntil((r) => r.isFirst);
+              authVm.cerrarSesion();
+            },
+          ),
         ],
       ),
     );
@@ -148,7 +162,7 @@ class _TabItem extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: Container(
-        height: 44,
+        height: 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.transparent,
@@ -157,7 +171,7 @@ class _TabItem extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 17,
             fontWeight: FontWeight.w700,
             color: selected ? Colors.white : AppColors.textDark,
           ),
@@ -193,8 +207,8 @@ class _SquareButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onTap ?? () {},
           child: SizedBox(
-            width: 46,
-            height: 46,
+            width: 56,
+            height: 56,
             child: Icon(icon, color: color),
           ),
         ),

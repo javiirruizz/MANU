@@ -4,15 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'core/app_theme.dart';
-import 'data/agenda_repository.dart';
 import 'data/auth_repository.dart';
 import 'firebase_options.dart';
-import 'viewmodels/agenda_view_model.dart';
 import 'viewmodels/auth_view_model.dart';
 import 'views/admin_home_page.dart';
 import 'views/agenda_page.dart';
 import 'views/cambiar_password_page.dart';
 import 'views/login_page.dart';
+import 'models/usuario.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,9 +34,6 @@ class MiAgendaApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository())),
-        ChangeNotifierProvider(
-          create: (_) => AgendaViewModel(AgendaRepository()),
-        ),
       ],
       child: MaterialApp(
         title: 'Mi Agenda',
@@ -64,7 +60,9 @@ class AuthGate extends StatelessWidget {
     final usuario = auth.usuario;
     if (usuario == null) return const LoginPage();
     if (usuario.debeCambiarPassword) return const CambiarPasswordPage();
-    if (usuario.esAdministrador) return const AdminHomePage();
-    return const AgendaPage();
+    if (usuario.esAdministrador || usuario.rol == RolUsuario.profesor) {
+      return const AdminHomePage();
+    }
+    return AgendaPage();
   }
 }
