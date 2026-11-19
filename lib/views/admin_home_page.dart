@@ -3,15 +3,17 @@ import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
 import '../data/horario_ejemplo.dart';
+import '../data/menu_repository.dart';
 import '../data/tarea_repository.dart';
 import '../data/usuario_repository.dart';
 import '../models/usuario.dart';
 import '../viewmodels/auth_view_model.dart';
+import '../viewmodels/gestor_tareas_view_model.dart';
 import '../viewmodels/usuario_view_model.dart';
 import 'agenda_page.dart';
 import 'alta_usuario_page.dart';
 import 'profesor/gestor_tareas_screen.dart';
-import '../viewmodels/gestor_tareas_view_model.dart';
+import 'widgets/gestion_menu_dialog.dart';
 import 'widgets/gestion_roles_dialog.dart';
 
 class AdminHomePage extends StatelessWidget {
@@ -148,6 +150,25 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.security),
                     label: const Text('Roles y permisos'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  gap,
+                ],
+
+                // --- Gestión del Menú Semanal (HU 12) ---
+                if (user.esAdministrador ||
+                    user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => GestionMenuDialog(
+                        repository: MenuRepository(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.restaurant_menu),
+                    label: const Text('Gestión de menú semanal'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
