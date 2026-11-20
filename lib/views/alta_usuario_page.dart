@@ -20,6 +20,7 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
   final _telefonoCtrl = TextEditingController();
   RolUsuario _rol = RolUsuario.alumno;
   DateTime? _fechaNacimiento;
+  final Set<String> _alumnosSeleccionadosIds = {};
   String? _errorLocal;
 
   @override
@@ -49,9 +50,20 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
       );
       return;
     }
-    setState(() => _errorLocal = null);
 
     final vm = context.read<UsuarioViewModel>();
+    if (_rol == RolUsuario.familiar &&
+        vm.alumnos.isNotEmpty &&
+        _alumnosSeleccionadosIds.isEmpty) {
+      setState(
+        () => _errorLocal =
+            'Selecciona al menos un alumno para vincular al familiar.',
+      );
+      return;
+    }
+
+    setState(() => _errorLocal = null);
+
     final creado = await vm.crearUsuario(
       nombre: _nombreCtrl.text,
       nombreUsuario: _usuarioCtrl.text,
@@ -59,6 +71,7 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
       dni: _dniCtrl.text,
       telefonoContacto: _telefonoCtrl.text,
       fechaNacimiento: _fechaNacimiento,
+      alumnoIds: _alumnosSeleccionadosIds.toList(),
     );
 
     if (creado == null || !mounted) return;
@@ -118,6 +131,7 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
     setState(() {
       _rol = RolUsuario.alumno;
       _fechaNacimiento = null;
+      _alumnosSeleccionadosIds.clear();
     });
   }
 
@@ -125,7 +139,6 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
   Widget build(BuildContext context) {
     final vm = context.watch<UsuarioViewModel>();
 
-    // Prueba 3: un rol sin permiso queda bloqueado
     if (!vm.solicitante.tienePermiso(PermisoUsuario.gestionarUsuarios)) {
       return Scaffold(
         appBar: AppBar(title: const Text('Gestión de usuarios')),
@@ -192,8 +205,78 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                                 child: Text(_nombreRol(r)),
                               ),
                           ],
-                          onChanged: (r) => setState(() => _rol = r ?? _rol),
+                          onChanged: (r) => setState(() {
+                            _rol = r ?? _rol;
+                            if (_rol != RolUsuario.familiar) {
+                              _alumnosSeleccionadosIds.clear();
+                            }
+                          }),
                         ),
+
+                        // Selector de alumno(s) vinculados cuando se crea un Familiar
+                        if (_rol == RolUsuario.familiar) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBlue,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.primary.withAlpha(60),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Alumno(s) vinculados a este familiar *',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (vm.alumnos.isEmpty)
+                                  const Text(
+                                    'No hay alumnos registrados todavía. Crea primero la cuenta del alumno.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSoft,
+                                    ),
+                                  )
+                                else
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    children: vm.alumnos.map((alumno) {
+                                      final seleccionado =
+                                          _alumnosSeleccionadosIds.contains(
+                                            alumno.id,
+                                          );
+                                      return FilterChip(
+                                        label: Text(alumno.nombre),
+                                        selected: seleccionado,
+                                        onSelected: (val) {
+                                          setState(() {
+                                            if (val) {
+                                              _alumnosSeleccionadosIds.add(
+                                                alumno.id,
+                                              );
+                                            } else {
+                                              _alumnosSeleccionadosIds.remove(
+                                                alumno.id,
+                                              );
+                                            }
+                                          });
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 12),
                         TextField(
                           controller: _dniCtrl,

@@ -63,7 +63,6 @@ enum PermisoUsuario {
   final String nombre;
   final String descripcion;
 
-  // Permisos por defecto según el rol
   static Set<PermisoUsuario> permisosPorDefecto(RolUsuario rol) {
     switch (rol) {
       case RolUsuario.administrador:
@@ -106,6 +105,7 @@ class Usuario {
     this.preferenciaEnvios = '',
     this.comedorId,
     this.debeCambiarPassword = false,
+    this.alumnoIds = const [],
   }) : _permisos = permisos;
 
   final String id;
@@ -121,8 +121,8 @@ class Usuario {
   final String preferenciaEnvios;
   final String? comedorId;
   final bool debeCambiarPassword;
+  final List<String> alumnoIds; // Alumnos vinculados si el rol es familiar
 
-  // Si no se especificaron permisos, se usan los del rol
   Set<PermisoUsuario> get permisos => _permisos != null
       ? Set.unmodifiable(_permisos)
       : PermisoUsuario.permisosPorDefecto(rol);
@@ -157,6 +157,7 @@ class Usuario {
     String? preferenciaEnvios,
     String? comedorId,
     bool? debeCambiarPassword,
+    List<String>? alumnoIds,
   }) {
     return Usuario(
       id: id ?? this.id,
@@ -173,6 +174,7 @@ class Usuario {
       preferenciaEnvios: preferenciaEnvios ?? this.preferenciaEnvios,
       comedorId: comedorId ?? this.comedorId,
       debeCambiarPassword: debeCambiarPassword ?? this.debeCambiarPassword,
+      alumnoIds: alumnoIds ?? this.alumnoIds,
     );
   }
 
@@ -214,6 +216,7 @@ class Usuario {
       preferenciaEnvios: m['preferenciaEnvios'] ?? '',
       comedorId: m['comedorId'],
       debeCambiarPassword: m['debeCambiarPassword'] ?? false,
+      alumnoIds: List<String>.from(m['alumnoIds'] ?? []),
     );
   }
 
@@ -232,5 +235,6 @@ class Usuario {
     'preferenciaEnvios': preferenciaEnvios,
     'comedorId': comedorId,
     'debeCambiarPassword': debeCambiarPassword,
+    'alumnoIds': alumnoIds,
   };
 }

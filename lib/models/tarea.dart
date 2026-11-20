@@ -185,14 +185,13 @@ class Tarea {
     'horaInicio': Timestamp.fromDate(horaInicio),
     'horaFinal': Timestamp.fromDate(horaFinal),
     'aulaId': aulaId,
+    'creadaPor': creadaPor,
     'pasos': pasos.map((p) => p.toMap()).toList(),
     'alumnoIds': alumnoIds,
     'contingenciaIds': contingenciaIds,
     if (includePictogramas)
       'pictogramas': pictogramas.map((p) => p.toMap()).toList(),
-
     if (imagenAdjuntaUrl != null) 'imagenAdjuntaUrl': imagenAdjuntaUrl,
-
     if (audioUrl != null) 'audioUrl': audioUrl,
   };
 }

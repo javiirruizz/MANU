@@ -37,7 +37,6 @@ class UsuarioRepository {
 
   final FirebaseFirestore? _db;
 
-  // Usuarios de prueba
   static final List<Usuario> _usuariosIniciales = [
     const Usuario(
       id: 'admin_1',
@@ -65,6 +64,7 @@ class UsuarioRepository {
       telefonoContacto: '600000003',
       rol: RolUsuario.familiar,
       puedeEditarPerfil: false,
+      alumnoIds: ['alum_1'],
     ),
     const Usuario(
       id: 'alum_1',
@@ -91,17 +91,23 @@ class UsuarioRepository {
   Future<List<Usuario>> getAlumnos() =>
       listarUsuarios(filtroRol: RolUsuario.alumno);
 
-  // Lista todos los usuarios y permite filtrar por rol.
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     final db = _db;
     if (db != null) {
-      Query<Map<String, dynamic>> query = db.collection('usuarios');
+      Query query = db.collection('usuarios');
       if (filtroRol != null) {
         query = query.where('rol', isEqualTo: filtroRol.name);
       }
       final snap = await query.get();
       if (snap.docs.isNotEmpty) {
-        return snap.docs.map((d) => Usuario.fromMap(d.id, d.data())).toList();
+        return snap.docs
+            .map(
+              (d) => Usuario.fromMap(
+                d.id,
+                Map<String, dynamic>.from(d.data() as Map),
+              ),
+            )
+            .toList();
       }
     }
     if (filtroRol != null) {
@@ -125,7 +131,6 @@ class UsuarioRepository {
     }
   }
 
-  // Lanza AccesoDenegadoException si no tiene permiso
   void verificarAcceso({
     required Usuario usuario,
     required PermisoUsuario permisoRequerido,
@@ -174,8 +179,8 @@ class UsuarioRepository {
     String? dni,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
+    List<String> alumnoIds = const [],
   }) async {
-    // Prueba 3: un alumno (u otro rol sin permiso) queda bloqueado
     verificarAcceso(
       usuario: solicitante,
       permisoRequerido: PermisoUsuario.gestionarUsuarios,
@@ -192,7 +197,6 @@ class UsuarioRepository {
 
     final password = _generarPasswordTemporal();
 
-    // La cuenta se crea en la app secundaria para no cerrar la sesión del admin
     final auth = FirebaseAuth.instanceFor(app: await _appSecundaria());
     final UserCredential cred;
     try {
@@ -201,7 +205,6 @@ class UsuarioRepository {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      // Prueba 2: nombre de usuario repetido
       if (e.code == 'email-already-in-use') {
         throw NombreUsuarioDuplicadoException(nu);
       }
@@ -220,14 +223,14 @@ class UsuarioRepository {
           : telefonoContacto.trim(),
       fechaNacimiento: fechaNacimiento,
       debeCambiarPassword: true,
+      alumnoIds: rol == RolUsuario.familiar ? alumnoIds : const [],
     );
 
     try {
-      // Prueba 1: queda registrada en la BD (usa la sesión del admin)
       _usuariosLocales.add(usuario);
       await _db?.collection('usuarios').doc(usuario.id).set(usuario.toMap());
     } catch (_) {
-      await cred.user!.delete(); // evita cuentas "huérfanas" sin ficha
+      await cred.user!.delete();
       rethrow;
     } finally {
       await auth.signOut();
@@ -257,7 +260,6 @@ class UsuarioRepository {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
-    // No se puede quitar al único admin
     if (actual.rol == RolUsuario.administrador &&
         nuevoRol != RolUsuario.administrador) {
       final todos = await listarUsuarios();

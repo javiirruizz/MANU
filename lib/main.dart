@@ -10,6 +10,7 @@ import 'viewmodels/auth_view_model.dart';
 import 'views/admin_home_page.dart';
 import 'views/agenda_page.dart';
 import 'views/cambiar_password_page.dart';
+import 'views/familiar/familiar_home_page.dart';
 import 'views/login_page.dart';
 import 'models/usuario.dart';
 
@@ -62,6 +63,9 @@ class AuthGate extends StatelessWidget {
     if (usuario.debeCambiarPassword) return const CambiarPasswordPage();
     if (usuario.esAdministrador || usuario.rol == RolUsuario.profesor) {
       return const AdminHomePage();
+    }
+    if (usuario.rol == RolUsuario.familiar) {
+      return const FamiliarHomePage();
     }
     return AgendaPage();
   }

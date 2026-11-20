@@ -31,6 +31,9 @@ class UsuarioViewModel extends ChangeNotifier {
 
   Usuario get solicitante => _solicitante;
   List<Usuario> get usuarios => List.unmodifiable(_usuariosFiltrados);
+  List<Usuario> get alumnos => List.unmodifiable(
+    _usuarios.where((u) => u.rol == RolUsuario.alumno),
+  );
   Usuario? get usuarioSeleccionado => _usuarioSeleccionado;
   RolUsuario? get filtroRol => _filtroRol;
   String get filtroTexto => _filtroTexto;
@@ -110,6 +113,7 @@ class UsuarioViewModel extends ChangeNotifier {
     String? dni,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
+    List<String> alumnoIds = const [],
   }) async {
     _mensajeError = null;
     _mensajeExito = null;
@@ -125,6 +129,7 @@ class UsuarioViewModel extends ChangeNotifier {
         dni: dni,
         telefonoContacto: telefonoContacto,
         fechaNacimiento: fechaNacimiento,
+        alumnoIds: alumnoIds,
       );
       _usuarios = [..._usuarios, creado.usuario];
       _mensajeExito = 'Cuenta "${creado.usuario.nombreUsuario}" creada.';
