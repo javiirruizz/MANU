@@ -13,6 +13,7 @@ import '../viewmodels/usuario_view_model.dart';
 import 'agenda_page.dart';
 import 'alta_usuario_page.dart';
 import 'profesor/gestor_tareas_screen.dart';
+import 'widgets/enviar_notificacion_dialog.dart';
 import 'widgets/gestion_menu_dialog.dart';
 import 'widgets/gestion_roles_dialog.dart';
 
@@ -169,6 +170,26 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.restaurant_menu),
                     label: const Text('Gestión de menú semanal'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  gap,
+                ],
+
+                // --- Enviar Aviso Push Personalizado (HU 35) ---
+                if (user.esAdministrador ||
+                    user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => EnviarNotificacionDialog(
+                        tutorId: user.id,
+                        tutorNombre: user.nombre,
+                      ),
+                    ),
+                    icon: const Icon(Icons.notifications_active_outlined),
+                    label: const Text('Enviar aviso urgente'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
