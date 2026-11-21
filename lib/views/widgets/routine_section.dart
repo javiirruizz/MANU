@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_colors.dart';
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
+import 'barra_progreso_pausable.dart';
 import 'pictograma_imagen.dart';
 
 /// Horario del día: es la parte principal de la pantalla.
@@ -177,8 +178,8 @@ class _RoutineSectionState extends State<RoutineSection> {
       separatorBuilder: (_, _) => const SizedBox(height: _separacion),
       itemBuilder: (context, i) {
         final t = tareas[i];
-        return SizedBox(
-          height: _altoTarjeta,
+        return ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _altoTarjeta),
           child: _TareaCard(
             tarea: t,
             actual: vm.esActual(t),
@@ -219,7 +220,7 @@ class _TareaCard extends StatelessWidget {
         : null;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: actual
             ? AppColors.cardBlue
@@ -232,107 +233,120 @@ class _TareaCard extends StatelessWidget {
           width: actual ? 4 : 1.5,
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          PictogramaImagen(
-            url: url,
-            id: tarea.pictogramaId,
-            consulta: tarea.nombre,
-            size: 118,
-            iconoReserva: Icons.event_note_outlined,
-            opacidad: completada ? 0.5 : 1,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              PictogramaImagen(
+                url: url,
+                id: tarea.pictogramaId,
+                consulta: tarea.nombre,
+                size: 118,
+                iconoReserva: Icons.event_note_outlined,
+                opacidad: completada ? 0.5 : 1,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
-                      style: const TextStyle(
-                        fontSize: 25,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    if (actual) ...[
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'AHORA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
+                    Row(
+                      children: [
+                        Text(
+                          '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
+                          style: const TextStyle(
+                            fontSize: 25,
                             fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
                           ),
                         ),
+                        if (actual) ...[
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'AHORA',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      tarea.nombre,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: completada
+                            ? AppColors.textSoft
+                            : AppColors.textDark,
                       ),
-                    ],
+                    ),
+                    if (tarea.descripcion.isNotEmpty)
+                      Text(
+                        tarea.descripcion,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: AppColors.textSoft,
+                        ),
+                      ),
                   ],
                 ),
-                Text(
-                  tarea.nombre,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    color: completada ? AppColors.textSoft : AppColors.textDark,
-                  ),
+              ),
+              if (onAudio != null)
+                IconButton(
+                  tooltip: 'Escuchar',
+                  iconSize: 34,
+                  icon: const Icon(Icons.volume_up_outlined),
+                  onPressed: onAudio,
                 ),
-                if (tarea.descripcion.isNotEmpty)
-                  Text(
-                    tarea.descripcion,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: AppColors.textSoft,
+              const SizedBox(width: 8),
+              Semantics(
+                button: true,
+                label: completada
+                    ? 'Marcar como pendiente'
+                    : 'Marcar como hecha',
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onToggle,
+                  child: Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: completada
+                          ? AppColors.green
+                          : AppColors.checkEmpty,
+                    ),
+                    child: Icon(
+                      Icons.check,
+                      color: completada ? Colors.white : AppColors.surface,
+                      size: 52,
                     ),
                   ),
-              ],
-            ),
-          ),
-          if (onAudio != null)
-            IconButton(
-              tooltip: 'Escuchar',
-              iconSize: 34,
-              icon: const Icon(Icons.volume_up_outlined),
-              onPressed: onAudio,
-            ),
-          const SizedBox(width: 8),
-          Semantics(
-            button: true,
-            label: completada ? 'Marcar como pendiente' : 'Marcar como hecha',
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onToggle,
-              child: Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: completada ? AppColors.green : AppColors.checkEmpty,
-                ),
-                child: Icon(
-                  Icons.check,
-                  color: completada ? Colors.white : AppColors.surface,
-                  size: 52,
                 ),
               ),
-            ),
+            ],
           ),
+          // Barra de progreso pausable (HU 17) en la tarea en curso
+          if (actual && !completada) BarraProgresoPausable(tarea: tarea),
         ],
       ),
     );
