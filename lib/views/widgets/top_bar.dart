@@ -13,6 +13,7 @@ import '../../viewmodels/auth_view_model.dart';
 import 'gestion_roles_dialog.dart';
 import 'pictograma_imagen.dart';
 import 'pictograma_selector_dialog.dart';
+import '../../core/app_theme.dart'; // Importante para context.palette
 
 /// Barra superior: logo, pestañas y accesos rápidos.
 class TopBar extends StatelessWidget {
@@ -39,7 +40,7 @@ class TopBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface, // Cambio dinámico
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -48,18 +49,18 @@ class TopBar extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: context.palette.primary, // Cambio dinámico
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.menu_book_outlined, color: Colors.white),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Mi Agenda',
-            style: TextStyle(
+            style: TextStyle( // Sin const
               fontSize: 26,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: context.palette.primary, // Cambio dinámico
             ),
           ),
           const SizedBox(width: 28),
@@ -67,7 +68,7 @@ class TopBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.tabTrack,
+                color: context.palette.tabTrack, // Cambio dinámico (usa el color base de la paleta)
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -95,8 +96,8 @@ class TopBar extends StatelessWidget {
             _SquareButton(
               icon: Icons.admin_panel_settings_outlined,
               tooltip: 'Gestión de Roles y Permisos (HU 03)',
-              background: AppColors.tabTrack,
-              color: AppColors.primary,
+              background: context.palette.tabTrack, // Cambio dinámico
+              color: context.palette.primary, // Cambio dinámico
               onTap: () async {
                 final usuario = context.read<AuthViewModel>().usuario;
                 if (usuario == null) return;
@@ -115,8 +116,8 @@ class TopBar extends StatelessWidget {
             _SquareButton(
               icon: Icons.photo_library_outlined,
               tooltip: 'Biblioteca de Pictogramas (HU 05)',
-              background: AppColors.badge,
-              color: AppColors.primary,
+              background: context.palette.badge, // Cambio dinámico
+              color: context.palette.primary, // Cambio dinámico
               onTap: () async {
                 final seleccionado = await showDialog<Pictograma>(
                   context: context,
@@ -130,7 +131,7 @@ class TopBar extends StatelessWidget {
                       content: Text(
                         'Pictograma seleccionado: ${seleccionado.nombre}',
                       ),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.palette.primary, // Cambio dinámico
                     ),
                   );
                 }
@@ -138,14 +139,18 @@ class TopBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          const _SquareButton(
+          _SquareButton( // Sin const para permitir acceso al context internamente
             icon: Icons.settings_outlined,
             tooltip: 'Ajustes',
+            background: context.palette.tabTrack,
+            color: context.palette.textDark,
           ),
           const SizedBox(width: 8),
-          _SquareButton(
+          _SquareButton( // Sin const
             icon: Icons.logout,
             tooltip: 'Cerrar sesión',
+            background: context.palette.tabTrack,
+            color: context.palette.textDark,
             onTap: () {
               final nav = Navigator.of(context);
               final authVm = context.read<AuthViewModel>();
@@ -184,22 +189,22 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AlertDialog( // Extraemos ctx del builder pero usamos context de la app para paleta
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.notifications_active,
-              color: AppColors.primary,
+              color: context.palette.primary, // Cambio dinámico
               size: 32,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 noti.titulo,
-                style: const TextStyle(
+                style: TextStyle( // Sin const
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: context.palette.primary, // Cambio dinámico
                 ),
               ),
             ),
@@ -231,10 +236,10 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
             Text(
               noti.mensaje,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle( // Sin const
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
+                color: context.palette.textDark, // Cambio dinámico
               ),
             ),
           ],
@@ -248,7 +253,7 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.green,
+              backgroundColor: context.palette.green, // Cambio dinámico
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () async {
@@ -298,8 +303,8 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
               icon: Icons.notifications_outlined,
               tooltip: 'Avisos (${noLeidas.length} sin leer)',
               background:
-                  noLeidas.isNotEmpty ? AppColors.orangeSoft : AppColors.tabTrack,
-              color: noLeidas.isNotEmpty ? AppColors.orange : AppColors.textDark,
+                  noLeidas.isNotEmpty ? AppColors.orangeSoft : context.palette.tabTrack, // Cambio dinámico (el naranja lo dejamos fijo porque es de alerta universal)
+              color: noLeidas.isNotEmpty ? AppColors.orange : context.palette.textDark, // Cambio dinámico
               onTap: () {
                 if (noLeidas.isNotEmpty) {
                   _mostrarAlertaUrgente(noLeidas.first);
@@ -354,15 +359,15 @@ class _TabItem extends StatelessWidget {
         height: 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected ? context.palette.primary : Colors.transparent, // Cambio dinámico
           borderRadius: BorderRadius.circular(11),
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: TextStyle( // Sin const
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : AppColors.textDark,
+            color: selected ? Colors.white : context.palette.textDark, // Cambio dinámico
           ),
         ),
       ),
@@ -374,8 +379,8 @@ class _SquareButton extends StatelessWidget {
   const _SquareButton({
     required this.icon,
     required this.tooltip,
-    this.background = AppColors.tabTrack,
-    this.color = AppColors.textDark,
+    this.background = Colors.transparent, // Se asigna desde fuera si hace falta
+    this.color = Colors.black, // Se asigna desde fuera
     this.onTap,
   });
 

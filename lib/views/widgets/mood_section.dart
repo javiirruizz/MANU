@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/app_colors.dart';
+import '../../core/app_theme.dart'; // Importante
 import '../../models/mood_option.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
@@ -47,7 +47,10 @@ class MoodSection extends StatelessWidget {
             onPressed: () {
               vm.completeDay();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('¡Día completado! Buen trabajo')),
+                SnackBar(
+                  content: const Text('¡Día completado! Buen trabajo'),
+                  backgroundColor: context.palette.primary, // Dinámico
+                ),
               );
             },
             icon: const Icon(Icons.check_circle_outline, size: 28),
@@ -56,7 +59,7 @@ class MoodSection extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenDark,
+              backgroundColor: context.palette.primary, // Usar color primario para cierre de día
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(76),
               shape: RoundedRectangleBorder(
@@ -86,7 +89,7 @@ class _MoodTile extends StatelessWidget {
     final forma = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(14),
       side: BorderSide(
-        color: selected ? AppColors.green : Colors.transparent,
+        color: selected ? context.palette.green : Colors.transparent, // Cambio dinámico
         width: 3,
       ),
     );
@@ -101,7 +104,7 @@ class _MoodTile extends StatelessWidget {
           label: option.label,
           excludeSemantics: true,
           child: Material(
-            color: selected ? AppColors.selectedBg : AppColors.cardBlue,
+            color: selected ? context.palette.selectedBg : context.palette.cardTint, // Cambio dinámico
             shape: forma,
             child: InkWell(
               customBorder: forma,
@@ -122,9 +125,10 @@ class _MoodTile extends StatelessWidget {
                     Text(
                       option.label,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle( // Sin const
                         fontWeight: FontWeight.w800,
                         fontSize: 19,
+                        color: context.palette.textDark, // Añadido color dinámico
                       ),
                     ),
                   ],

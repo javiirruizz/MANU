@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/app_colors.dart';
+import '../../core/app_theme.dart'; // Importante
 import '../../data/menu_repository.dart';
 import '../../models/menu.dart';
 import '../../viewmodels/auth_view_model.dart';
@@ -61,7 +61,7 @@ class _MenuSectionState extends State<MenuSection> {
       icon: Icons.restaurant,
       title: _verSemana ? 'MENÚ SEMANAL' : 'MENÚ',
       badge: _verSemana ? 'Semana' : 'Hoy',
-      expand: false, // Imprescindible porque está dentro de SingleChildScrollView
+      expand: false, 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -73,8 +73,12 @@ class _MenuSectionState extends State<MenuSection> {
                 icon: Icon(
                   _verSemana ? Icons.today : Icons.calendar_view_week,
                   size: 18,
+                  color: context.palette.primary, // Cambio dinámico
                 ),
-                label: Text(_verSemana ? 'Ver hoy' : 'Ver semana'),
+                label: Text(
+                  _verSemana ? 'Ver hoy' : 'Ver semana',
+                  style: TextStyle(color: context.palette.primary), // Cambio dinámico
+                ),
               ),
               if (esGestor)
                 ElevatedButton.icon(
@@ -82,6 +86,8 @@ class _MenuSectionState extends State<MenuSection> {
                   icon: const Icon(Icons.edit_calendar, size: 16),
                   label: const Text('Editar'),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: context.palette.primary, // Cambio dinámico
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
@@ -101,12 +107,12 @@ class _MenuSectionState extends State<MenuSection> {
                 }
                 final menu = snapshot.data;
                 if (menu == null) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       'No hay menú publicado para hoy.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSoft),
+                      style: TextStyle(color: context.palette.textSoft), // Cambio dinámico sin const
                     ),
                   );
                 }
@@ -125,12 +131,12 @@ class _MenuSectionState extends State<MenuSection> {
                 }
                 final menus = snapshot.data ?? [];
                 if (menus.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       'No hay menús publicados esta semana.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSoft),
+                      style: TextStyle(color: context.palette.textSoft), // Cambio dinámico sin const
                     ),
                   );
                 }
@@ -142,10 +148,10 @@ class _MenuSectionState extends State<MenuSection> {
                         padding: const EdgeInsets.only(top: 10, bottom: 6),
                         child: Text(
                           '${_nombresDias[m.fecha.weekday]} ${m.fecha.day}/${m.fecha.month}',
-                          style: const TextStyle(
+                          style: TextStyle( // Sin const
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
+                            color: context.palette.primary, // Cambio dinámico
                           ),
                         ),
                       ),
@@ -211,13 +217,11 @@ class _MealTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.cardBlue,
+          color: context.palette.cardTint, // Cambio dinámico (antes cardBlue)
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            // Si el profesor eligió un pictograma concreto se muestra;
-            // si no, PictogramaImagen lo resuelve automáticamente por el nombre del plato.
             if (tieneUrlManual)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -246,17 +250,18 @@ class _MealTile extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle( // Sin const
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                      color: context.palette.primary, // Cambio dinámico
                     ),
                   ),
                   Text(
                     plato.nombre,
-                    style: const TextStyle(
+                    style: TextStyle( // Sin const
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
+                      color: context.palette.textDark, // Añadido color
                     ),
                   ),
                 ],

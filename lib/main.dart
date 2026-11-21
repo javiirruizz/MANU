@@ -7,6 +7,7 @@ import 'core/app_theme.dart';
 import 'data/auth_repository.dart';
 import 'firebase_options.dart';
 import 'viewmodels/auth_view_model.dart';
+import 'viewmodels/theme_view_model.dart';
 import 'views/admin_home_page.dart';
 import 'views/agenda_page.dart';
 import 'views/cambiar_password_page.dart';
@@ -34,13 +35,23 @@ class MiAgendaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository())),
+        ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository())), //[cite: 13]
+        ChangeNotifierProvider(create: (_) => ThemeViewModel()), // Inyectamos el gestor de temas
       ],
-      child: MaterialApp(
-        title: 'Mi Agenda',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        home: const AuthGate(),
+      // Usamos Consumer para que MaterialApp escuche los cambios y se redibuje al instante
+      child: Consumer<ThemeViewModel>(
+        builder: (context, themeVM, child) {
+          return MaterialApp(
+            title: 'Mi Agenda',
+            debugShowCheckedModeBanner: false, //[cite: 13]
+            // Conectamos el constructor dinámico en lugar de AppTheme.light
+            theme: AppTheme.build(
+              tema: themeVM.temaActual,
+              altoContraste: themeVM.altoContraste,
+            ),
+            home: const AuthGate(), //[cite: 13]
+          );
+        },
       ),
     );
   }

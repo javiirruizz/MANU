@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/app_colors.dart';
+import '../../core/app_theme.dart'; // Importante: extensión del tema
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'barra_progreso_pausable.dart';
@@ -69,7 +69,7 @@ class _RoutineSectionState extends State<RoutineSection> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface, // Cambio dinámico
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -77,12 +77,15 @@ class _RoutineSectionState extends State<RoutineSection> {
         children: [
           Row(
             children: [
-              const Icon(Icons.schedule, color: AppColors.primary, size: 32),
+              Icon(Icons.schedule, color: context.palette.primary, size: 32), // Sin const, color dinámico
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Mi horario',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: context.palette.textDark), // Sin const
                 ),
               ),
               Container(
@@ -91,15 +94,15 @@ class _RoutineSectionState extends State<RoutineSection> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.badge,
+                  color: context.palette.badge, // Cambio dinámico
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${vm.completedCount}/${vm.totalCount}',
-                  style: const TextStyle(
+                  style: TextStyle( // Sin const
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: context.palette.primary, // Cambio dinámico
                   ),
                 ),
               ),
@@ -116,14 +119,16 @@ class _RoutineSectionState extends State<RoutineSection> {
                     labelStyle: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
-                      color: vm.filtro == f ? Colors.white : AppColors.textDark,
+                      color: vm.filtro == f
+                          ? Colors.white
+                          : context.palette.textDark, // Cambio dinámico
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 14,
                     ),
                     selected: vm.filtro == f,
-                    selectedColor: AppColors.primary,
+                    selectedColor: context.palette.primary, // Cambio dinámico
                     showCheckmark: false,
                     onSelected: (_) => vm.setFiltro(f),
                   ),
@@ -133,13 +138,13 @@ class _RoutineSectionState extends State<RoutineSection> {
             ),
           ),
           const SizedBox(height: 14),
-          Expanded(child: _contenido(vm)),
+          Expanded(child: _contenido(vm, context)), // Pasamos context para usar en _contenido
         ],
       ),
     );
   }
 
-  Widget _contenido(AgendaViewModel vm) {
+  Widget _contenido(AgendaViewModel vm, BuildContext context) {
     if (vm.error != null && vm.totalCount == 0) {
       return Center(
         child: Column(
@@ -147,7 +152,7 @@ class _RoutineSectionState extends State<RoutineSection> {
           children: [
             Text(
               vm.error!,
-              style: const TextStyle(fontSize: 18, color: AppColors.textSoft),
+              style: TextStyle(fontSize: 18, color: context.palette.textSoft), // Cambio dinámico sin const
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -165,7 +170,7 @@ class _RoutineSectionState extends State<RoutineSection> {
         child: Text(
           _vacios[vm.filtro]!,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, color: AppColors.textSoft),
+          style: TextStyle(fontSize: 22, color: context.palette.textSoft), // Cambio dinámico sin const
         ),
       );
     }
@@ -223,13 +228,13 @@ class _TareaCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: actual
-            ? AppColors.cardBlue
+            ? context.palette.cardTint // Cambio dinámico (antes cardBlue)
             : completada
-            ? AppColors.background
-            : AppColors.surface,
+                ? context.palette.background // Cambio dinámico
+                : context.palette.surface, // Cambio dinámico
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: actual ? AppColors.primary : AppColors.divider,
+          color: actual ? context.palette.primary : context.palette.divider, // Cambio dinámico
           width: actual ? 4 : 1.5,
         ),
       ),
@@ -256,10 +261,10 @@ class _TareaCard extends StatelessWidget {
                       children: [
                         Text(
                           '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
-                          style: const TextStyle(
+                          style: TextStyle( // Sin const
                             fontSize: 25,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
+                            color: context.palette.primary, // Cambio dinámico
                           ),
                         ),
                         if (actual) ...[
@@ -270,7 +275,7 @@ class _TareaCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: context.palette.primary, // Cambio dinámico
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Text(
@@ -293,8 +298,8 @@ class _TareaCard extends StatelessWidget {
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
                         color: completada
-                            ? AppColors.textSoft
-                            : AppColors.textDark,
+                            ? context.palette.textSoft // Cambio dinámico
+                            : context.palette.textDark, // Cambio dinámico
                       ),
                     ),
                     if (tarea.descripcion.isNotEmpty)
@@ -302,9 +307,9 @@ class _TareaCard extends StatelessWidget {
                         tarea.descripcion,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle( // Sin const
                           fontSize: 20,
-                          color: AppColors.textSoft,
+                          color: context.palette.textSoft, // Cambio dinámico
                         ),
                       ),
                   ],
@@ -332,12 +337,12 @@ class _TareaCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: completada
-                          ? AppColors.green
-                          : AppColors.checkEmpty,
+                          ? context.palette.green // Cambio dinámico
+                          : context.palette.checkEmpty, // Cambio dinámico
                     ),
                     child: Icon(
                       Icons.check,
-                      color: completada ? Colors.white : AppColors.surface,
+                      color: completada ? Colors.white : context.palette.surface, // Cambio dinámico
                       size: 52,
                     ),
                   ),

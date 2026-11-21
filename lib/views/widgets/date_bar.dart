@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/app_colors.dart';
+import '../../core/app_theme.dart'; // Importante
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
 
@@ -15,7 +15,7 @@ class DateBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface, // Cambio dinámico
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -41,7 +41,7 @@ class DateBar extends StatelessWidget {
                       size: 64,
                       iconoReserva: Icons.calendar_month,
                     ),
-                    titulo: '${vm.dayNumber} de ${vm.monthName}',
+                    titulo: '${vm.dayNumber} de${vm.monthName}',
                     detalle: '${vm.year}',
                   ),
                   const SizedBox(width: 12),
@@ -62,7 +62,7 @@ class DateBar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: AppColors.tabTrack,
+              color: context.palette.tabTrack, // Cambio dinámico
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -91,8 +91,8 @@ class DateBar extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.greenLight,
-              foregroundColor: AppColors.greenDark,
+              backgroundColor: context.palette.green, // Cambio dinámico (el verde que defina el tema)
+              foregroundColor: context.palette.surface, // Cambio dinámico
               minimumSize: const Size(0, 64),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               shape: RoundedRectangleBorder(
@@ -122,7 +122,7 @@ class _Bloque extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppColors.chip,
+        color: context.palette.chip, // Cambio dinámico
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -136,14 +136,15 @@ class _Bloque extends StatelessWidget {
             children: [
               Text(
                 titulo,
-                style: const TextStyle(
+                style: TextStyle( // Sin const
                   fontWeight: FontWeight.w800,
                   fontSize: 24,
+                  color: context.palette.textDark, // Añadido color dinámico
                 ),
               ),
               Text(
                 detalle,
-                style: const TextStyle(fontSize: 15, color: AppColors.textSoft),
+                style: TextStyle(fontSize: 15, color: context.palette.textSoft), // Cambio dinámico sin const
               ),
             ],
           ),
@@ -169,14 +170,14 @@ class _PeriodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : AppColors.textDark;
+    final color = selected ? Colors.white : context.palette.textDark; // Cambio dinámico
     return Semantics(
       button: true,
       selected: selected,
       label: label,
       excludeSemantics: true,
       child: Material(
-        color: selected ? AppColors.primary : Colors.transparent,
+        color: selected ? context.palette.primary : Colors.transparent, // Cambio dinámico
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
