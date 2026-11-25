@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 
 import '../data/tarea_repository.dart';
 import '../data/usuario_repository.dart';
+import '../data/storage_repositoty.dart';
 import '../models/tarea.dart';
 import '../models/usuario.dart';
 import '../views/profesor/gestor_tareas_page.dart';
 
 class GestorTareasViewModel extends ChangeNotifier {
   final TareaRepository _tareaRepo;
+  final StorageRepository _storageRepo = StorageRepository();
   final UsuarioRepository _usuarioRepo;
 
   GestorTareasViewModel({
@@ -20,11 +22,71 @@ class GestorTareasViewModel extends ChangeNotifier {
   List<Tarea> _tareas = [];
   DateTime _fechaSeleccionada = DateTime.now();
   bool _cargando = false;
+  bool _subiendoMultimedia = false;
 
   List<Usuario> get alumnos => _alumnos;
   List<Tarea> get tareas => _tareas;
   DateTime get fechaSeleccionada => _fechaSeleccionada;
   bool get cargando => _cargando;
+  bool get subiendoMultimedia => _subiendoMultimedia;
+
+  void _actualizarIUCargando() {
+    _cargando = true;
+    notifyListeners();
+  }
+
+  void _actualizarIUTieneInformacion() {
+    _cargando = false;
+    notifyListeners();
+  }
+
+  void _actualizarIUSubiendoMultimedia(bool estado) {
+    _subiendoMultimedia = estado;
+    notifyListeners();
+  }
+
+  Future<void> adjuntarVideoATarea(String tareaId) async {
+    _actualizarIUSubiendoMultimedia(true);
+    try {
+      String? url = await _storageRepo.seleccionarYSubirVideo();
+      if (url != null) {
+        await _tareaRepo.actualizarRecursosMultimedia(tareaId, videoUrl: url);
+        // Recargamos la lista para que la interfaz muestre el cambio de inmediato
+        _tareas = await _tareaRepo.getTareasPorFecha(_fechaSeleccionada); 
+      }
+    } catch (e) {
+      debugPrint("Error al adjuntar vídeo: $e");
+    } finally {
+      _actualizarIUSubiendoMultimedia(false);
+    }
+  }
+
+  Future<void> adjuntarAudioATarea(String tareaId) async {
+    _actualizarIUSubiendoMultimedia(true);
+    try {
+      String? url = await _storageRepo.seleccionarYSubirAudio();
+      if (url != null) {
+        await _tareaRepo.actualizarRecursosMultimedia(tareaId, audioUrl: url);
+        _tareas = await _tareaRepo.getTareasPorFecha(_fechaSeleccionada);
+      }
+    } catch (e) {
+      debugPrint("Error al adjuntar audio: $e");
+    } finally {
+      _actualizarIUSubiendoMultimedia(false);
+    }
+  }
+
+  Future<void> adjuntarEnlaceWeb(String tareaId, String url) async {
+    _actualizarIUSubiendoMultimedia(true);
+    try {
+      await _tareaRepo.actualizarRecursosMultimedia(tareaId, enlaceWeb: url);
+      _tareas = await _tareaRepo.getTareasPorFecha(_fechaSeleccionada);
+    } catch (e) {
+      debugPrint("Error al adjuntar enlace: $e");
+    } finally {
+      _actualizarIUSubiendoMultimedia(false);
+    }
+  }
 
   Future<void> cargarDatos() async {
     _actualizarIUCargando();
@@ -149,13 +211,21 @@ class GestorTareasViewModel extends ChangeNotifier {
     return resultado;
   }
 
-  void _actualizarIUCargando() {
-    _cargando = true;
-    notifyListeners();
+Future<String?> subirVideo() async {
+  _actualizarIUSubiendoMultimedia(true);
+  try {
+    return await _storageRepo.seleccionarYSubirVideo();
+  } finally {
+    _actualizarIUSubiendoMultimedia(false);
   }
+}
 
-  void _actualizarIUTieneInformacion() {
-    _cargando = false;
-    notifyListeners();
+Future<String?> subirAudio() async {
+  _actualizarIUSubiendoMultimedia(true);
+  try {
+    return await _storageRepo.seleccionarYSubirAudio();
+  } finally {
+    _actualizarIUSubiendoMultimedia(false);
   }
+}
 }

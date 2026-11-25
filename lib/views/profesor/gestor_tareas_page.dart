@@ -8,7 +8,7 @@ enum TipoAsignacion { individual, grupal, recurrente }
 
 enum FrecuenciaRecurrencia { diario, semanal, diasLectivos }
 
-/// Pantalla del Gestor de Planificación y Asignación de Tareas (HU 07).
+/// Pantalla del Gestor de Planificación y Asignación de Tareas (HU 07 & HU 08.2).
 class GestorTareasPage extends StatefulWidget {
   const GestorTareasPage({
     super.key,
@@ -21,12 +21,18 @@ class GestorTareasPage extends StatefulWidget {
     this.onActualizarTarea,
     this.onEliminarTarea,
     this.onFechaCambiada,
+    this.subiendoMultimedia = false,
+    this.onSubirVideo,
+    this.onSubirAudio,
   });
 
   final List<Usuario> alumnos;
   final List<Tarea> tareas;
   final List<String> aulas;
   final String profesorId;
+  final bool subiendoMultimedia;
+  final Future<String?> Function()? onSubirVideo;
+  final Future<String?> Function()? onSubirAudio;
 
   final Future<void> Function(
     Tarea nuevaTarea,
@@ -64,6 +70,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   final _nombreCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _aulaCtrl = TextEditingController();
+  final _enlaceWebCtrl = TextEditingController();
+  String? _audioUrl;
+  String? _videoUrl;
 
   TipoAsignacion _tipoAsignacion = TipoAsignacion.individual;
   FrecuenciaRecurrencia _frecuencia = FrecuenciaRecurrencia.semanal;
@@ -82,6 +91,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     _descCtrl.dispose();
     _aulaCtrl.dispose();
     _filtroAulaCtrl.dispose();
+    _enlaceWebCtrl.dispose();
     super.dispose();
   }
 
@@ -98,9 +108,12 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     _nombreCtrl.clear();
     _descCtrl.clear();
     _aulaCtrl.clear();
+    _enlaceWebCtrl.clear();
     setState(() {
       _tareaEnEdicion = null;
       _alumnoSeleccionadoId = null;
+      _audioUrl = null;
+      _videoUrl = null;
       _alumnosGrupalesIds.clear();
       _tipoAsignacion = TipoAsignacion.individual;
       _frecuencia = FrecuenciaRecurrencia.semanal;
@@ -115,6 +128,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       _nombreCtrl.text = tarea.nombre;
       _descCtrl.text = tarea.descripcion;
       _aulaCtrl.text = tarea.aulaId;
+      _enlaceWebCtrl.text = tarea.enlaceWeb ?? '';
+      _audioUrl = tarea.audioUrl;
+      _videoUrl = tarea.videoUrl;
       _horaInicio = TimeOfDay.fromDateTime(tarea.horaInicio);
       _horaFin = TimeOfDay.fromDateTime(tarea.horaFinal);
 
@@ -238,7 +254,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   Widget _buildCronogramaPanel() {
     final textoFiltroAula = _filtroAulaCtrl.text.trim().toLowerCase();
 
-    // Filtrado de tareas (Fecha + Alumno + Texto de Aula/Lugar)
     final tareasDelDia = widget.tareas.where((t) {
       final mismaFecha =
           t.fecha.year == _fechaSeleccionada.year &&
@@ -246,12 +261,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
           t.fecha.day == _fechaSeleccionada.day;
       if (!mismaFecha) return false;
 
-      // Filtro por Alumno
       if (_filtroAlumnoId != null && !t.alumnoIds.contains(_filtroAlumnoId)) {
         return false;
       }
 
-      // Filtro por Texto de Aula / Lugar (Búsqueda flexible insensible a mayúsculas)
       if (textoFiltroAula.isNotEmpty) {
         final aulaTarea = t.aulaId.trim().toLowerCase();
         if (!aulaTarea.contains(textoFiltroAula)) {
@@ -278,7 +291,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Encabezado: Título y Filtros (Buscador de Aula + Dropdown de Alumnos)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -292,7 +304,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               ),
               Row(
                 children: [
-                  // CAMPO DE TEXTO PARA FILTRAR POR AULA / LUGAR
                   SizedBox(
                     width: 160,
                     height: 38,
@@ -330,13 +341,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                             : null,
                       ),
                       onChanged: (val) {
-                        setState(() {}); // Redibuja el cronograma al escribir
+                        setState(() {});
                       },
                     ),
                   ),
                   const SizedBox(width: 8),
-
-                  // FILTRO DE ALUMNOS
                   DropdownButton<String?>(
                     value: _filtroAlumnoId,
                     underline: const SizedBox(),
@@ -368,7 +377,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
           ),
           const SizedBox(height: 10),
 
-          // BARRA DE NAVEGACIÓN DE FECHA
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -440,7 +448,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
           const Divider(height: 1),
           const SizedBox(height: 12),
 
-          // LISTA DE TAREAS DEL DÍA
           Expanded(
             child: tareasDelDia.isEmpty
                 ? Center(
@@ -513,12 +520,47 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      tarea.nombre,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            tarea.nombre,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ),
+                                        // Iconos indicadores de recursos multimedia adjuntos
+                                        if (tarea.audioUrl != null)
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.audiotrack,
+                                              size: 16,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        if (tarea.videoUrl != null)
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.videocam,
+                                              size: 16,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        if (tarea.enlaceWeb != null &&
+                                            tarea.enlaceWeb!.isNotEmpty)
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 4),
+                                            child: Icon(
+                                              Icons.link,
+                                              size: 16,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     if (tarea.descripcion.isNotEmpty)
                                       Text(
@@ -748,6 +790,132 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // ---- SECCIÓN MULTIMEDIA (HU 08.2) ----
+              const Text(
+                'Recursos Multimedia (Opcional):',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _enlaceWebCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Enlace web (YouTube, Drive, recurso externo...)',
+                  hintText: 'https://...',
+                  prefixIcon: const Icon(Icons.link),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (widget.subiendoMultimedia)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    children: [
+                      LinearProgressIndicator(),
+                      SizedBox(height: 4),
+                      Text(
+                        'Subiendo archivo a Firebase...',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSoft),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    // Botón Audio + Botón de quitar si ya existe
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: Icon(
+                                _audioUrl != null
+                                    ? Icons.check_circle
+                                    : Icons.audiotrack,
+                                color: _audioUrl != null
+                                    ? AppColors.greenDark
+                                    : AppColors.primary,
+                              ),
+                              label: Text(
+                                _audioUrl != null ? 'Audio listo' : 'Subir Audio',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onPressed: () async {
+                                if (widget.onSubirAudio != null) {
+                                  final url = await widget.onSubirAudio!();
+                                  if (!mounted) return;
+                                  if (url != null) {
+                                    setState(() => _audioUrl = url);
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                          if (_audioUrl != null)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              tooltip: 'Quitar audio',
+                              onPressed: () => setState(() => _audioUrl = null),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Botón Vídeo + Botón de quitar si ya existe
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: Icon(
+                                _videoUrl != null
+                                    ? Icons.check_circle
+                                    : Icons.video_library,
+                                color: _videoUrl != null
+                                    ? AppColors.greenDark
+                                    : AppColors.primary,
+                              ),
+                              label: Text(
+                                _videoUrl != null ? 'Vídeo listo' : 'Subir Vídeo',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onPressed: () async {
+                                if (widget.onSubirVideo != null) {
+                                  final url = await widget.onSubirVideo!();
+                                  if (!mounted) return;
+                                  if (url != null) {
+                                    setState(() => _videoUrl = url);
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                          if (_videoUrl != null)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.redAccent,
+                                size: 20,
+                              ),
+                              tooltip: 'Quitar vídeo',
+                              onPressed: () => setState(() => _videoUrl = null),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 16),
+
+              // ---- HORARIO ESCOLAR ----
               const Text(
                 'Horario Escolar:',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -865,7 +1033,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                         : (esEdicion ? 'Guardar Cambios' : 'Asignar Tarea'),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: hayConflicto
+                    backgroundColor: hayConflicto || widget.subiendoMultimedia
                         ? Colors.grey
                         : AppColors.primary,
                     foregroundColor: Colors.white,
@@ -873,7 +1041,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: hayConflicto || _guardando
+                  onPressed: hayConflicto || _guardando || widget.subiendoMultimedia
                       ? null
                       : _ejecutarGuardado,
                 ),
@@ -958,7 +1126,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     if (pick != null) {
       setState(() => _fechaSeleccionada = pick);
 
-      // Añade estas líneas para avisar al ViewModel del cambio de fecha
       if (widget.onFechaCambiada != null) {
         widget.onFechaCambiada!(pick);
       }
@@ -990,7 +1157,6 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   Future<void> _confirmarEliminacion(Tarea tarea) async {
     final bool esFiltroEspecifico = _filtroAlumnoId != null;
 
-    // Obtener el nombre del alumno seleccionado para mostrarlo en el diálogo
     String nombreAlumno = '';
     if (esFiltroEspecifico) {
       final alumno = widget.alumnos.firstWhere(
@@ -998,7 +1164,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
         orElse: () => Usuario(
           id: '',
           nombreUsuario: '',
-          nombre: 'el  alumno',
+          nombre: 'el alumno',
           rol: RolUsuario.alumno,
         ),
       );
@@ -1106,6 +1272,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     }
 
     final esEdicion = _tareaEnEdicion != null;
+    final enlaceTexto = _enlaceWebCtrl.text.trim();
 
     final tareaAGuardar = Tarea(
       id: esEdicion ? _tareaEnEdicion!.id : '',
@@ -1118,6 +1285,14 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       aulaId: _aulaCtrl.text.trim(),
       creadaPor: widget.profesorId,
       alumnoIds: alumnosAsignados,
+      pasos: esEdicion ? _tareaEnEdicion!.pasos : const [],
+      contingenciaIds: esEdicion ? _tareaEnEdicion!.contingenciaIds : const [],
+      completadaPor: esEdicion ? _tareaEnEdicion!.completadaPor : const {},
+      pictogramas: esEdicion ? _tareaEnEdicion!.pictogramas : const [],
+      imagenAdjuntaUrl: esEdicion ? _tareaEnEdicion!.imagenAdjuntaUrl : null,
+      audioUrl: _audioUrl,
+      videoUrl: _videoUrl,
+      enlaceWeb: enlaceTexto.isEmpty ? null : enlaceTexto,
     );
 
     setState(() => _guardando = true);

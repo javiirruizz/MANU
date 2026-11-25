@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_theme.dart'; // Importante: extensión del tema
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'barra_progreso_pausable.dart';
 import 'pictograma_imagen.dart';
+import 'reproductor_audio.dart';
+import 'reproductor_video.dart' hide ReproductorAudioWidget;
 
 /// Horario del día: es la parte principal de la pantalla.
 class RoutineSection extends StatefulWidget {
@@ -77,15 +80,16 @@ class _RoutineSectionState extends State<RoutineSection> {
         children: [
           Row(
             children: [
-              Icon(Icons.schedule, color: context.palette.primary, size: 32), // Sin const, color dinámico
+              Icon(Icons.schedule, color: context.palette.primary, size: 32),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Mi horario',
                   style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: context.palette.textDark), // Sin const
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: context.palette.textDark,
+                  ),
                 ),
               ),
               Container(
@@ -94,15 +98,15 @@ class _RoutineSectionState extends State<RoutineSection> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: context.palette.badge, // Cambio dinámico
+                  color: context.palette.badge,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${vm.completedCount}/${vm.totalCount}',
-                  style: TextStyle( // Sin const
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: context.palette.primary, // Cambio dinámico
+                    color: context.palette.primary,
                   ),
                 ),
               ),
@@ -121,14 +125,14 @@ class _RoutineSectionState extends State<RoutineSection> {
                       fontWeight: FontWeight.w700,
                       color: vm.filtro == f
                           ? Colors.white
-                          : context.palette.textDark, // Cambio dinámico
+                          : context.palette.textDark,
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 14,
                     ),
                     selected: vm.filtro == f,
-                    selectedColor: context.palette.primary, // Cambio dinámico
+                    selectedColor: context.palette.primary,
                     showCheckmark: false,
                     onSelected: (_) => vm.setFiltro(f),
                   ),
@@ -138,7 +142,7 @@ class _RoutineSectionState extends State<RoutineSection> {
             ),
           ),
           const SizedBox(height: 14),
-          Expanded(child: _contenido(vm, context)), // Pasamos context para usar en _contenido
+          Expanded(child: _contenido(vm, context)),
         ],
       ),
     );
@@ -152,7 +156,7 @@ class _RoutineSectionState extends State<RoutineSection> {
           children: [
             Text(
               vm.error!,
-              style: TextStyle(fontSize: 18, color: context.palette.textSoft), // Cambio dinámico sin const
+              style: TextStyle(fontSize: 18, color: context.palette.textSoft),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -170,7 +174,7 @@ class _RoutineSectionState extends State<RoutineSection> {
         child: Text(
           _vacios[vm.filtro]!,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, color: context.palette.textSoft), // Cambio dinámico sin const
+          style: TextStyle(fontSize: 22, color: context.palette.textSoft),
         ),
       );
     }
@@ -190,9 +194,6 @@ class _RoutineSectionState extends State<RoutineSection> {
             actual: vm.esActual(t),
             completada: vm.esCompletada(t),
             onToggle: () => vm.toggleTask(t.id),
-            onAudio: t.audioUrl == null
-                ? null
-                : () => vm.playTaskAudio(t.audioUrl!),
           ),
         );
       },
@@ -206,17 +207,60 @@ class _TareaCard extends StatelessWidget {
     required this.actual,
     required this.completada,
     required this.onToggle,
-    this.onAudio,
   });
 
   final Tarea tarea;
   final bool actual;
   final bool completada;
   final VoidCallback onToggle;
-  final VoidCallback? onAudio;
 
   static String _hora(DateTime d) =>
       '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  void _mostrarVideo(BuildContext context, String videoUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.videocam, color: context.palette.primary, size: 30),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                tarea.nombre,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 650,
+          child: SingleChildScrollView(
+            child: ReproductorVideoWidget(url: videoUrl),
+          ),
+        ),
+        actions: [
+          FilledButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(),
+            icon: const Icon(Icons.close),
+            label: const Text('Cerrar', style: TextStyle(fontSize: 18)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirEnlace(BuildContext context, String rawUrl) async {
+    final urlFormateada =
+        rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+            ? rawUrl
+            : 'https://$rawUrl';
+    final uri = Uri.tryParse(urlFormateada);
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,22 +268,28 @@ class _TareaCard extends StatelessWidget {
         ? tarea.pictogramas.first.urlResuelta
         : null;
 
+    final tieneAudio = tarea.audioUrl != null && tarea.audioUrl!.isNotEmpty;
+    final tieneVideo = tarea.videoUrl != null && tarea.videoUrl!.isNotEmpty;
+    // Verifica que el campo en tu modelo Tarea se llame enlaceWeb
+    final tieneEnlace = tarea.enlaceWeb != null && tarea.enlaceWeb!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: actual
-            ? context.palette.cardTint // Cambio dinámico (antes cardBlue)
+            ? context.palette.cardTint
             : completada
-                ? context.palette.background // Cambio dinámico
-                : context.palette.surface, // Cambio dinámico
+                ? context.palette.background
+                : context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: actual ? context.palette.primary : context.palette.divider, // Cambio dinámico
+          color: actual ? context.palette.primary : context.palette.divider,
           width: actual ? 4 : 1.5,
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
@@ -261,10 +311,10 @@ class _TareaCard extends StatelessWidget {
                       children: [
                         Text(
                           '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
-                          style: TextStyle( // Sin const
+                          style: TextStyle(
                             fontSize: 25,
                             fontWeight: FontWeight.w800,
-                            color: context.palette.primary, // Cambio dinámico
+                            color: context.palette.primary,
                           ),
                         ),
                         if (actual) ...[
@@ -275,7 +325,7 @@ class _TareaCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: context.palette.primary, // Cambio dinámico
+                              color: context.palette.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Text(
@@ -298,8 +348,8 @@ class _TareaCard extends StatelessWidget {
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
                         color: completada
-                            ? context.palette.textSoft // Cambio dinámico
-                            : context.palette.textDark, // Cambio dinámico
+                            ? context.palette.textSoft
+                            : context.palette.textDark,
                       ),
                     ),
                     if (tarea.descripcion.isNotEmpty)
@@ -307,21 +357,14 @@ class _TareaCard extends StatelessWidget {
                         tarea.descripcion,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle( // Sin const
+                        style: TextStyle(
                           fontSize: 20,
-                          color: context.palette.textSoft, // Cambio dinámico
+                          color: context.palette.textSoft,
                         ),
                       ),
                   ],
                 ),
               ),
-              if (onAudio != null)
-                IconButton(
-                  tooltip: 'Escuchar',
-                  iconSize: 34,
-                  icon: const Icon(Icons.volume_up_outlined),
-                  onPressed: onAudio,
-                ),
               const SizedBox(width: 8),
               Semantics(
                 button: true,
@@ -337,12 +380,12 @@ class _TareaCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: completada
-                          ? context.palette.green // Cambio dinámico
-                          : context.palette.checkEmpty, // Cambio dinámico
+                          ? context.palette.green
+                          : context.palette.checkEmpty,
                     ),
                     child: Icon(
                       Icons.check,
-                      color: completada ? Colors.white : context.palette.surface, // Cambio dinámico
+                      color: completada ? Colors.white : context.palette.surface,
                       size: 52,
                     ),
                   ),
@@ -350,6 +393,54 @@ class _TareaCard extends StatelessWidget {
               ),
             ],
           ),
+          // Reproductor de audio con Play / Pausa integrado
+          if (tieneAudio) ...[
+            const SizedBox(height: 10),
+            ReproductorAudioWidget(url: tarea.audioUrl!),
+          ],
+          // Botones de Vídeo y Enlace Web
+          if (tieneVideo || tieneEnlace) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                if (tieneVideo)
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.palette.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () => _mostrarVideo(context, tarea.videoUrl!),
+                    icon: const Icon(Icons.play_circle_fill, size: 26),
+                    label: const Text(
+                      'Ver vídeo',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                if (tieneEnlace)
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.palette.primary,
+                      side: BorderSide(color: context.palette.primary, width: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () => _abrirEnlace(context, tarea.enlaceWeb!),
+                    icon: const Icon(Icons.open_in_new, size: 24),
+                    label: const Text(
+                      'Abrir enlace',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           // Barra de progreso pausable (HU 17) en la tarea en curso
           if (actual && !completada) BarraProgresoPausable(tarea: tarea),
         ],

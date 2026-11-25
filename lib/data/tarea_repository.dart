@@ -44,6 +44,18 @@ class TareaRepository {
     await batch.commit();
   }
 
+  Future<void> actualizarRecursosMultimedia(String tareaId, {String? videoUrl, String? audioUrl, String? enlaceWeb}) async {
+    Map<String, dynamic> dataToUpdate = {};
+    
+    if (videoUrl != null) dataToUpdate['videoUrl'] = videoUrl;
+    if (audioUrl != null) dataToUpdate['audioUrl'] = audioUrl;
+    if (enlaceWeb != null) dataToUpdate['enlaceWeb'] = enlaceWeb;
+
+    if (dataToUpdate.isNotEmpty) {
+      await _firestore.collection('tareas').doc(tareaId).update(dataToUpdate);
+    }
+  }
+
   /// Tareas del alumno para un día, en tiempo real.
   /// Filtramos la fecha en cliente para no necesitar un índice compuesto.
   Stream<List<Tarea>> streamTareasAlumno(String alumnoId, DateTime fecha) {

@@ -24,6 +24,8 @@ class Tarea {
     this.pictogramas = const [],
     this.imagenAdjuntaUrl,
     this.audioUrl,
+    this.videoUrl,
+    this.enlaceWeb,
   });
 
   final String id;
@@ -42,6 +44,8 @@ class Tarea {
   final List<Pictograma> pictogramas; // relación muchos a muchos (* a *)
   final String? imagenAdjuntaUrl;
   final String? audioUrl;
+  final String? videoUrl;
+  final String? enlaceWeb;
 
   /// Pictograma de la tarea = el del último paso
   /// (si solo hay uno, es ese mismo).
@@ -69,6 +73,8 @@ class Tarea {
     List<Pictograma>? pictogramas,
     String? imagenAdjuntaUrl,
     String? audioUrl,
+    String? videoUrl,
+    String? enlaceWeb,
   }) {
     return Tarea(
       id: id ?? this.id,
@@ -87,6 +93,8 @@ class Tarea {
       pictogramas: pictogramas ?? this.pictogramas,
       imagenAdjuntaUrl: imagenAdjuntaUrl ?? this.imagenAdjuntaUrl,
       audioUrl: audioUrl ?? this.audioUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
+      enlaceWeb: enlaceWeb ?? this.enlaceWeb,
     );
   }
 
@@ -154,6 +162,8 @@ class Tarea {
       completadaPor: completadaPor,
       imagenAdjuntaUrl: m['imagenAdjuntaUrl'] as String?,
       audioUrl: m['audioUrl'] as String?,
+      videoUrl: m['videoUrl'] as String?,
+      enlaceWeb: m['enlaceWeb'] as String?,
     );
   }
 
@@ -193,5 +203,7 @@ class Tarea {
       'pictogramas': pictogramas.map((p) => p.toMap()).toList(),
     if (imagenAdjuntaUrl != null) 'imagenAdjuntaUrl': imagenAdjuntaUrl,
     if (audioUrl != null) 'audioUrl': audioUrl,
+    if (videoUrl != null) 'videoUrl': videoUrl,
+    if (enlaceWeb != null) 'enlaceWeb': enlaceWeb,
   };
 }

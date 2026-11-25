@@ -30,7 +30,9 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
-        if (widget.viewModel.cargando && widget.viewModel.tareas.isEmpty) {
+        if (widget.viewModel.cargando &&
+            widget.viewModel.tareas.isEmpty &&
+            !widget.viewModel.subiendoMultimedia) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -41,6 +43,9 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
           alumnos: widget.viewModel.alumnos,
           tareas: widget.viewModel.tareas,
           fechaSeleccionada: widget.viewModel.fechaSeleccionada,
+          subiendoMultimedia: widget.viewModel.subiendoMultimedia,
+          onSubirVideo: () => widget.viewModel.subirVideo(),
+          onSubirAudio: () => widget.viewModel.subirAudio(),
           onGuardarTarea: (nuevaTarea, tipo, frecuencia) async {
             await widget.viewModel.crearTarea(
               nuevaTarea: nuevaTarea,
@@ -54,10 +59,9 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
           onEliminarTarea: (tareaId) async {
             await widget.viewModel.eliminarTarea(tareaId);
           },
-
           onFechaCambiada: (nuevaFecha) async {
             await widget.viewModel.cambiarFecha(nuevaFecha);
-          },          
+          },
         );
       },
     );
