@@ -279,24 +279,43 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
     );
   }
 
-  Future<void> _eliminarUsuario(Usuario u) async {
+  Future<void> _cambiarEstado(Usuario u, EstadoCuenta nuevo) async {
+    final (titulo, texto, boton) = switch (nuevo) {
+      EstadoCuenta.suspendida => (
+        'Suspender cuenta',
+        '${u.nombre} no podrá iniciar sesión hasta que reactives su cuenta. '
+            'Sus datos se conservan.',
+        'Suspender',
+      ),
+      EstadoCuenta.baja => (
+        'Dar de baja',
+        '${u.nombre} perderá el acceso definitivamente. Su historial quedará '
+            'archivado y no se eliminará de los registros del colegio.',
+        'Dar de baja',
+      ),
+      EstadoCuenta.activa => (
+        'Reactivar cuenta',
+        '${u.nombre} podrá volver a iniciar sesión.',
+        'Reactivar',
+      ),
+    };
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Dar de baja usuario'),
-        content: Text(
-          '¿Seguro que deseas dar de baja a ${u.nombre} (${u.nombreUsuario})?\n\n'
-          'Sus datos se eliminarán de la base de datos y perderá el acceso a la agenda.',
-        ),
+        title: Text(titulo),
+        content: Text(texto),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: nuevo == EstadoCuenta.baja
+                ? FilledButton.styleFrom(backgroundColor: Colors.red)
+                : null,
             onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Dar de baja'),
+            child: Text(boton),
           ),
         ],
       ),
@@ -305,16 +324,15 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
     if (confirmar != true || !mounted) return;
 
     final vm = context.read<UsuarioViewModel>();
-    final eliminado = await vm.eliminarUsuario(u.id);
-
+    final ok = await vm.cambiarEstado(u.id, nuevo);
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          eliminado
-              ? 'Usuario "${u.nombre}" eliminado correctamente.'
-              : (vm.mensajeError ?? 'No se pudo dar de baja al usuario.'),
+          ok
+              ? (vm.mensajeExito ?? 'Estado actualizado.')
+              : (vm.mensajeError ?? 'No se pudo cambiar el estado.'),
         ),
       ),
     );
@@ -411,6 +429,12 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                       ),
                       const SizedBox(width: 8),
                     ],
+                    FilterChip(
+                      avatar: const Icon(Icons.archive_outlined, size: 18),
+                      label: const Text('Bajas'),
+                      selected: vm.verBajas,
+                      onSelected: (_) => vm.alternarBajas(),
+                    ),
                   ],
                 ),
               ),
@@ -441,7 +465,9 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                             ),
                             subtitle: Text(
                               '${u.nombreUsuario} · ${_nombreRol(u.rol)}'
-                              '${u.dni != null ? ' · DNI: ${u.dni}' : ''}',
+                              '${u.dni != null ? ' · DNI: ${u.dni}' : ''}'
+                              '${u.estado == EstadoCuenta.suspendida ? ' · SUSPENDIDA' : ''}'
+                              '${u.estado == EstadoCuenta.baja ? ' · BAJA' : ''}',
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -465,16 +491,31 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                                       ? null
                                       : () => _restablecerPassword(u),
                                 ),
-                                IconButton(
-                                  tooltip: 'Dar de baja',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.red,
+                                if (u.estado != EstadoCuenta.baja)
+                                  PopupMenuButton<EstadoCuenta>(
+                                    tooltip: 'Estado de la cuenta',
+                                    icon: const Icon(
+                                      Icons.manage_accounts_outlined,
+                                    ),
+                                    enabled: !vm.cargando,
+                                    onSelected: (e) => _cambiarEstado(u, e),
+                                    itemBuilder: (_) => [
+                                      if (u.estado == EstadoCuenta.activa)
+                                        const PopupMenuItem(
+                                          value: EstadoCuenta.suspendida,
+                                          child: Text('Suspender'),
+                                        )
+                                      else
+                                        const PopupMenuItem(
+                                          value: EstadoCuenta.activa,
+                                          child: Text('Reactivar'),
+                                        ),
+                                      const PopupMenuItem(
+                                        value: EstadoCuenta.baja,
+                                        child: Text('Dar de baja'),
+                                      ),
+                                    ],
                                   ),
-                                  onPressed: vm.cargando
-                                      ? null
-                                      : () => _eliminarUsuario(u),
-                                ),
                               ],
                             ),
                           );

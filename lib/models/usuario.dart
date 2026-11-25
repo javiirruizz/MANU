@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum RolUsuario { familiar, administrador, profesor, alumno }
 
+enum EstadoCuenta { activa, suspendida, baja }
+
 /// Permisos granulares de acceso en la plataforma educativa.
 enum PermisoUsuario {
   gestionarUsuarios(
@@ -99,6 +101,7 @@ class Usuario {
     this.dni,
     this.telefonoContacto,
     this.fechaNacimiento,
+    this.estado = EstadoCuenta.activa,
     Set<PermisoUsuario>? permisos,
     this.email,
     this.puedeEditarPerfil = false,
@@ -116,6 +119,7 @@ class Usuario {
   final String? dni;
   final String? telefonoContacto;
   final DateTime? fechaNacimiento;
+  final EstadoCuenta estado;
   final Set<PermisoUsuario>? _permisos;
   final String? email;
   final bool puedeEditarPerfil;
@@ -153,6 +157,7 @@ class Usuario {
     String? telefonoContacto,
     DateTime? fechaNacimiento,
     RolUsuario? rol,
+    EstadoCuenta? estado,
     Set<PermisoUsuario>? permisos,
     String? email,
     bool? puedeEditarPerfil,
@@ -170,6 +175,7 @@ class Usuario {
       telefonoContacto: telefonoContacto ?? this.telefonoContacto,
       fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
       rol: rol ?? this.rol,
+      estado: estado ?? this.estado,
       permisos: permisos ?? _permisos,
       email: email ?? this.email,
       puedeEditarPerfil: puedeEditarPerfil ?? this.puedeEditarPerfil,
@@ -214,6 +220,8 @@ class Usuario {
       telefonoContacto: m['telefonoContacto'],
       fechaNacimiento: parseFecha(m['fechaNacimiento']),
       rol: rol,
+      estado:
+          EstadoCuenta.values.asNameMap()[m['estado']] ?? EstadoCuenta.activa,
       permisos: permisos,
       email: m['email'],
       puedeEditarPerfil: m['puedeEditarPerfil'] ?? false,
@@ -234,6 +242,7 @@ class Usuario {
         ? null
         : Timestamp.fromDate(fechaNacimiento!),
     'rol': rol.name,
+    'estado': estado.name,
     'permisos': permisos.map((p) => p.name).toList(),
     'email': email,
     'puedeEditarPerfil': puedeEditarPerfil,

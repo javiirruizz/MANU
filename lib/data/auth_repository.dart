@@ -9,6 +9,16 @@ class CredencialesInvalidasException implements Exception {
   String toString() => 'Nombre de usuario o contraseña incorrectos.';
 }
 
+class CuentaNoActivaException implements Exception {
+  const CuentaNoActivaException(this.estado);
+  final EstadoCuenta estado;
+
+  @override
+  String toString() => estado == EstadoCuenta.suspendida
+      ? 'Acceso denegado: tu cuenta está suspendida. Contacta con el centro.'
+      : 'Acceso denegado: esta cuenta ha sido dada de baja.';
+}
+
 class AuthRepository {
   AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
     : _auth = auth ?? FirebaseAuth.instance,
@@ -47,7 +57,12 @@ class AuthRepository {
         await _auth.signOut();
         throw const CredencialesInvalidasException();
       }
-      return Usuario.fromMap(doc.id, doc.data()!);
+      final usuario = Usuario.fromMap(doc.id, doc.data()!);
+      if (usuario.estado != EstadoCuenta.activa) {
+        await _auth.signOut();
+        throw CuentaNoActivaException(usuario.estado);
+      }
+      return usuario;
     } on FirebaseAuthException catch (e) {
       const malos = {
         'invalid-credential',
@@ -68,7 +83,12 @@ class AuthRepository {
       await _auth.signOut();
       return null;
     }
-    return Usuario.fromMap(doc.id, doc.data()!);
+    final usuario = Usuario.fromMap(doc.id, doc.data()!);
+    if (usuario.estado != EstadoCuenta.activa) {
+      await _auth.signOut();
+      return null;
+    }
+    return usuario;
   }
 
   Future<void> cerrarSesion() => _auth.signOut();
