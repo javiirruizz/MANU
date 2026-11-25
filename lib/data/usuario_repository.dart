@@ -78,6 +78,7 @@ class UsuarioRepository {
       id: 'alum_1',
       nombreUsuario: 'alumno1',
       nombre: 'Usuario Alumno 1',
+      email: 'alumno1@ejemplo.com',
       dni: '00000004D',
       telefonoContacto: '600000004',
       rol: RolUsuario.alumno,
@@ -278,6 +279,7 @@ class UsuarioRepository {
     String? dni,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
+    bool limpiarFechaNacimiento = false,
     List<String>? alumnoIds,
   }) async {
     verificarAcceso(
@@ -315,15 +317,26 @@ class UsuarioRepository {
       }
     }
 
-    final actualizado = actual.copyWith(
-      nombre: nombreLimpio,
+    // Se construye de nuevo para poder vaciar campos opcionales a null
+    final actualizado = Usuario(
+      id: actual.id,
       nombreUsuario: nu,
-      dni: (dni == null || dni.trim().isEmpty) ? null : dni.trim(),
-      telefonoContacto:
-          (telefonoContacto == null || telefonoContacto.trim().isEmpty)
+      nombre: nombreLimpio,
+      rol: actual.rol,
+      dni: dni == null ? actual.dni : (dni.trim().isEmpty ? null : dni.trim()),
+      telefonoContacto: telefonoContacto == null
+          ? actual.telefonoContacto
+          : (telefonoContacto.trim().isEmpty ? null : telefonoContacto.trim()),
+      fechaNacimiento: limpiarFechaNacimiento
           ? null
-          : telefonoContacto.trim(),
-      fechaNacimiento: fechaNacimiento ?? actual.fechaNacimiento,
+          : (fechaNacimiento ?? actual.fechaNacimiento),
+      permisos: actual.permisos,
+      email: actual.email,
+      puedeEditarPerfil: actual.puedeEditarPerfil,
+      preferenciaVisualizacion: actual.preferenciaVisualizacion,
+      preferenciaEnvios: actual.preferenciaEnvios,
+      comedorId: actual.comedorId,
+      debeCambiarPassword: actual.debeCambiarPassword,
       alumnoIds: actual.rol == RolUsuario.familiar
           ? (alumnoIds ?? actual.alumnoIds)
           : const [],

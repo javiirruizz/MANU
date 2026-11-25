@@ -178,6 +178,7 @@ class UsuarioViewModel extends ChangeNotifier {
     String? dni,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
+    bool limpiarFechaNacimiento = false,
     List<String>? alumnoIds,
   }) async {
     _mensajeError = null;
@@ -194,6 +195,7 @@ class UsuarioViewModel extends ChangeNotifier {
         dni: dni,
         telefonoContacto: telefonoContacto,
         fechaNacimiento: fechaNacimiento,
+        limpiarFechaNacimiento: limpiarFechaNacimiento,
         alumnoIds: alumnoIds,
       );
       _reemplazar(actualizado);
@@ -250,17 +252,34 @@ class UsuarioViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+<<<<<<< HEAD
       final actualizado = await _repository.cambiarEstado(
+=======
+      final idx = _usuarios.indexWhere((u) => u.id == usuarioId);
+      final nombre = idx != -1 ? _usuarios[idx].nombre : null;
+
+      await _repository.eliminarUsuario(
+>>>>>>> 0089a3795f9e1a3b8d03af6685f8d2b7f4d19bf6
         solicitante: _solicitante,
         usuarioId: usuarioId,
         nuevoEstado: nuevoEstado,
       );
+<<<<<<< HEAD
       _reemplazar(actualizado);
       _mensajeExito = switch (nuevoEstado) {
         EstadoCuenta.activa => 'Cuenta reactivada.',
         EstadoCuenta.suspendida => 'Cuenta suspendida.',
         EstadoCuenta.baja => 'Usuario dado de baja y archivado.',
       };
+=======
+      _usuarios = _usuarios.where((u) => u.id != usuarioId).toList();
+      if (_usuarioSeleccionado?.id == usuarioId) {
+        _usuarioSeleccionado = null;
+      }
+      _mensajeExito = nombre != null
+          ? 'Cuenta de "$nombre" dada de baja.'
+          : 'Cuenta dada de baja.';
+>>>>>>> 0089a3795f9e1a3b8d03af6685f8d2b7f4d19bf6
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;

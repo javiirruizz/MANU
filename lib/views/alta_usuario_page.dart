@@ -143,99 +143,18 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
   }
 
   Future<void> _editarUsuario(Usuario u) async {
-    final nombreCtrl = TextEditingController(text: u.nombre);
-    final dniCtrl = TextEditingController(text: u.dni ?? '');
-    final telefonoCtrl = TextEditingController(text: u.telefonoContacto ?? '');
-    String? errorDialogo;
-
+    final vm = context.read<UsuarioViewModel>();
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text('Editar usuario'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nombreCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre completo *',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: TextEditingController(text: u.nombreUsuario),
-                  enabled: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre de usuario (no editable)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: dniCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'DNI (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: telefonoCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Teléfono de contacto (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                if (errorDialogo != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    errorDialogo!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final vm = context.read<UsuarioViewModel>();
-                final ok = await vm.modificarUsuario(
-                  usuarioId: u.id,
-                  nombre: nombreCtrl.text,
-                  nombreUsuario: u.nombreUsuario,
-                  dni: dniCtrl.text,
-                  telefonoContacto: telefonoCtrl.text,
-                );
-                if (!dialogCtx.mounted) return;
-                if (ok) {
-                  Navigator.of(dialogCtx).pop(true);
-                } else {
-                  setStateDialog(() => errorDialogo = vm.mensajeError);
-                }
-              },
-              child: const Text('Guardar cambios'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) =>
+          _EditarUsuarioDialog(usuario: u, alumnos: vm.alumnos, vm: vm),
     );
-
-    nombreCtrl.dispose();
-    dniCtrl.dispose();
-    telefonoCtrl.dispose();
 
     if (guardado == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Datos del usuario actualizados.')),
+        SnackBar(
+          content: Text(vm.mensajeExito ?? 'Datos del usuario actualizados.'),
+        ),
       );
     }
   }
@@ -453,7 +372,7 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                       )
                     : ListView.separated(
                         itemCount: vm.usuarios.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (_, index) {
                           final u = vm.usuarios[index];
                           return ListTile(
@@ -715,4 +634,242 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
     RolUsuario.familiar => 'Familiar',
     RolUsuario.alumno => 'Alumno',
   };
+}
+
+class _EditarUsuarioDialog extends StatefulWidget {
+  const _EditarUsuarioDialog({
+    required this.usuario,
+    required this.alumnos,
+    required this.vm,
+  });
+
+  final Usuario usuario;
+  final List<Usuario> alumnos;
+  final UsuarioViewModel vm;
+
+  @override
+  State<_EditarUsuarioDialog> createState() => _EditarUsuarioDialogState();
+}
+
+class _EditarUsuarioDialogState extends State<_EditarUsuarioDialog> {
+  late final TextEditingController _nombreCtrl;
+  late final TextEditingController _dniCtrl;
+  late final TextEditingController _telefonoCtrl;
+  DateTime? _fechaNacimiento;
+  late final Set<String> _alumnosIds;
+  String? _errorDialogo;
+  bool _guardando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nombreCtrl = TextEditingController(text: widget.usuario.nombre);
+    _dniCtrl = TextEditingController(text: widget.usuario.dni ?? '');
+    _telefonoCtrl = TextEditingController(
+      text: widget.usuario.telefonoContacto ?? '',
+    );
+    _fechaNacimiento = widget.usuario.fechaNacimiento;
+    _alumnosIds = Set.of(widget.usuario.alumnoIds);
+  }
+
+  @override
+  void dispose() {
+    _nombreCtrl.dispose();
+    _dniCtrl.dispose();
+    _telefonoCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _elegirFecha() async {
+    final ahora = DateTime.now();
+    final f = await showDatePicker(
+      context: context,
+      initialDate: _fechaNacimiento ?? DateTime(ahora.year - 12),
+      firstDate: DateTime(1920),
+      lastDate: ahora,
+    );
+    if (f != null) setState(() => _fechaNacimiento = f);
+  }
+
+  Future<void> _guardar() async {
+    if (widget.usuario.rol == RolUsuario.familiar &&
+        widget.alumnos.isNotEmpty &&
+        _alumnosIds.isEmpty) {
+      setState(
+        () => _errorDialogo =
+            'Selecciona al menos un alumno para vincular al familiar.',
+      );
+      return;
+    }
+
+    setState(() {
+      _errorDialogo = null;
+      _guardando = true;
+    });
+
+    final ok = await widget.vm.modificarUsuario(
+      usuarioId: widget.usuario.id,
+      nombre: _nombreCtrl.text,
+      nombreUsuario: widget.usuario.nombreUsuario,
+      dni: _dniCtrl.text,
+      telefonoContacto: _telefonoCtrl.text,
+      fechaNacimiento: _fechaNacimiento,
+      limpiarFechaNacimiento: _fechaNacimiento == null,
+      alumnoIds: widget.usuario.rol == RolUsuario.familiar
+          ? _alumnosIds.toList()
+          : null,
+    );
+
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() {
+        _guardando = false;
+        _errorDialogo = widget.vm.mensajeError;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar usuario'),
+      content: SizedBox(
+        width: 440,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _nombreCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre completo *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: widget.usuario.nombreUsuario,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de usuario (no editable)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _dniCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'DNI (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _telefonoCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono de contacto (opcional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _elegirFecha,
+                      icon: const Icon(Icons.cake_outlined),
+                      label: Text(
+                        _fechaNacimiento == null
+                            ? 'Fecha de nacimiento (opcional)'
+                            : '${_fechaNacimiento!.day}/${_fechaNacimiento!.month}/${_fechaNacimiento!.year}',
+                      ),
+                    ),
+                  ),
+                  if (_fechaNacimiento != null)
+                    IconButton(
+                      tooltip: 'Quitar fecha',
+                      onPressed: () => setState(() => _fechaNacimiento = null),
+                      icon: const Icon(Icons.clear),
+                    ),
+                ],
+              ),
+              if (widget.usuario.rol == RolUsuario.familiar) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBlue,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withAlpha(60)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Alumno(s) vinculados a este familiar *',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (widget.alumnos.isEmpty)
+                        const Text(
+                          'No hay alumnos registrados todavía.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSoft,
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: widget.alumnos.map((alumno) {
+                            final seleccionado = _alumnosIds.contains(
+                              alumno.id,
+                            );
+                            return FilterChip(
+                              label: Text(alumno.nombre),
+                              selected: seleccionado,
+                              onSelected: (val) {
+                                setState(() {
+                                  if (val) {
+                                    _alumnosIds.add(alumno.id);
+                                  } else {
+                                    _alumnosIds.remove(alumno.id);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_errorDialogo != null) ...[
+                const SizedBox(height: 12),
+                Text(_errorDialogo!, style: const TextStyle(color: Colors.red)),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: Text(_guardando ? 'Guardando...' : 'Guardar cambios'),
+        ),
+      ],
+    );
+  }
 }
