@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -14,10 +14,13 @@ class AltaUsuarioPage extends StatefulWidget {
 }
 
 class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
+  final _busquedaCtrl = TextEditingController();
   final _nombreCtrl = TextEditingController();
   final _usuarioCtrl = TextEditingController();
   final _dniCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+
   RolUsuario _rol = RolUsuario.alumno;
   DateTime? _fechaNacimiento;
   final Set<String> _alumnosSeleccionadosIds = {};
@@ -25,10 +28,12 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
 
   @override
   void dispose() {
+    _busquedaCtrl.dispose();
     _nombreCtrl.dispose();
     _usuarioCtrl.dispose();
     _dniCtrl.dispose();
     _telefonoCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -70,6 +75,7 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
       rol: _rol,
       dni: _dniCtrl.text,
       telefonoContacto: _telefonoCtrl.text,
+      email: _emailCtrl.text,
       fechaNacimiento: _fechaNacimiento,
       alumnoIds: _alumnosSeleccionadosIds.toList(),
     );
@@ -128,11 +134,190 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
     _usuarioCtrl.clear();
     _dniCtrl.clear();
     _telefonoCtrl.clear();
+    _emailCtrl.clear();
     setState(() {
       _rol = RolUsuario.alumno;
       _fechaNacimiento = null;
       _alumnosSeleccionadosIds.clear();
     });
+  }
+
+  Future<void> _editarUsuario(Usuario u) async {
+    final nombreCtrl = TextEditingController(text: u.nombre);
+    final dniCtrl = TextEditingController(text: u.dni ?? '');
+    final telefonoCtrl = TextEditingController(text: u.telefonoContacto ?? '');
+    String? errorDialogo;
+
+    final guardado = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text('Editar usuario'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nombreCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre completo *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: TextEditingController(text: u.nombreUsuario),
+                  enabled: false,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de usuario (no editable)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: dniCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'DNI (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: telefonoCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Teléfono de contacto (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (errorDialogo != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    errorDialogo!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final vm = context.read<UsuarioViewModel>();
+                final ok = await vm.modificarUsuario(
+                  usuarioId: u.id,
+                  nombre: nombreCtrl.text,
+                  nombreUsuario: u.nombreUsuario,
+                  dni: dniCtrl.text,
+                  telefonoContacto: telefonoCtrl.text,
+                );
+                if (!dialogCtx.mounted) return;
+                if (ok) {
+                  Navigator.of(dialogCtx).pop(true);
+                } else {
+                  setStateDialog(() => errorDialogo = vm.mensajeError);
+                }
+              },
+              child: const Text('Guardar cambios'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    nombreCtrl.dispose();
+    dniCtrl.dispose();
+    telefonoCtrl.dispose();
+
+    if (guardado == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Datos del usuario actualizados.')),
+      );
+    }
+  }
+
+  Future<void> _restablecerPassword(Usuario u) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Restablecer contraseña'),
+        content: Text(
+          'Se enviará un correo a ${u.email} con un enlace de un solo uso '
+          'para que ${u.nombre} elija una contraseña nueva.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Enviar correo'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final vm = context.read<UsuarioViewModel>();
+    final correo = await vm.restablecerPassword(u.id);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          correo != null
+              ? 'Correo enviado a $correo. Revisa también la carpeta de spam.'
+              : (vm.mensajeError ?? 'Error al restablecer contraseña.'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _eliminarUsuario(Usuario u) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Dar de baja usuario'),
+        content: Text(
+          '¿Seguro que deseas dar de baja a ${u.nombre} (${u.nombreUsuario})?\n\n'
+          'Sus datos se eliminarán de la base de datos y perderá el acceso a la agenda.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Dar de baja'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final vm = context.read<UsuarioViewModel>();
+    final eliminado = await vm.eliminarUsuario(u.id);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          eliminado
+              ? 'Usuario "${u.nombre}" eliminado correctamente.'
+              : (vm.mensajeError ?? 'No se pudo dar de baja al usuario.'),
+        ),
+      ),
+    );
   }
 
   @override
@@ -155,197 +340,327 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
       );
     }
 
-    final error = _errorLocal ?? vm.mensajeError;
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de usuarios'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(
+                icon: Icon(Icons.people_outline),
+                text: 'Usuarios registrados',
+              ),
+              Tab(icon: Icon(Icons.person_add_outlined), text: 'Dar de alta'),
+            ],
+          ),
+        ),
+        body: TabBarView(children: [_buildTabUsuarios(vm), _buildTabAlta(vm)]),
+      ),
+    );
+  }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Alta de nuevas cuentas')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Card(
-                  color: AppColors.surface,
-                  elevation: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextField(
-                          controller: _nombreCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre completo *',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _usuarioCtrl,
-                          autocorrect: false,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre de usuario * (ej. lucas.gomez)',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<RolUsuario>(
-                          initialValue: _rol,
-                          decoration: const InputDecoration(
-                            labelText: 'Perfil *',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: [
-                            for (final r in RolUsuario.values)
-                              DropdownMenuItem(
-                                value: r,
-                                child: Text(_nombreRol(r)),
-                              ),
-                          ],
-                          onChanged: (r) => setState(() {
-                            _rol = r ?? _rol;
-                            if (_rol != RolUsuario.familiar) {
-                              _alumnosSeleccionadosIds.clear();
-                            }
-                          }),
-                        ),
+  Widget _buildTabUsuarios(UsuarioViewModel vm) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Buscador
+              TextField(
+                controller: _busquedaCtrl,
+                onChanged: vm.filtrarPorTexto,
+                decoration: InputDecoration(
+                  hintText: 'Buscar por nombre, usuario o DNI...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: vm.filtroTexto.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Limpiar búsqueda',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _busquedaCtrl.clear();
+                            vm.filtrarPorTexto('');
+                          },
+                        )
+                      : null,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
 
-                        // Selector de alumno(s) vinculados cuando se crea un Familiar
-                        if (_rol == RolUsuario.familiar) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardBlue,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: AppColors.primary.withAlpha(60),
+              // Filtro por rol
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Todos'),
+                      selected: vm.filtroRol == null,
+                      onSelected: (_) => vm.filtrarPorRol(null),
+                    ),
+                    const SizedBox(width: 8),
+                    for (final r in RolUsuario.values) ...[
+                      ChoiceChip(
+                        label: Text(_nombreRol(r)),
+                        selected: vm.filtroRol == r,
+                        onSelected: (_) =>
+                            vm.filtrarPorRol(vm.filtroRol == r ? null : r),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Lista de usuarios filtrados
+              Expanded(
+                child: vm.cargando && vm.usuarios.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : vm.usuarios.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No se encontraron usuarios con ese criterio.',
+                          style: TextStyle(color: AppColors.textSoft),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: vm.usuarios.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final u = vm.usuarios[index];
+                          return ListTile(
+                            title: Text(
+                              u.nombre,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            subtitle: Text(
+                              '${u.nombreUsuario} · ${_nombreRol(u.rol)}'
+                              '${u.dni != null ? ' · DNI: ${u.dni}' : ''}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text(
-                                  'Alumno(s) vinculados a este familiar *',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
+                                IconButton(
+                                  tooltip: 'Editar usuario',
+                                  icon: const Icon(Icons.edit_outlined),
+                                  onPressed: vm.cargando
+                                      ? null
+                                      : () => _editarUsuario(u),
                                 ),
-                                const SizedBox(height: 8),
-                                if (vm.alumnos.isEmpty)
-                                  const Text(
-                                    'No hay alumnos registrados todavía. Crea primero la cuenta del alumno.',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSoft,
-                                    ),
-                                  )
-                                else
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 6,
-                                    children: vm.alumnos.map((alumno) {
-                                      final seleccionado =
-                                          _alumnosSeleccionadosIds.contains(
-                                            alumno.id,
-                                          );
-                                      return FilterChip(
-                                        label: Text(alumno.nombre),
-                                        selected: seleccionado,
-                                        onSelected: (val) {
-                                          setState(() {
-                                            if (val) {
-                                              _alumnosSeleccionadosIds.add(
-                                                alumno.id,
-                                              );
-                                            } else {
-                                              _alumnosSeleccionadosIds.remove(
-                                                alumno.id,
-                                              );
-                                            }
-                                          });
-                                        },
-                                      );
-                                    }).toList(),
+                                IconButton(
+                                  tooltip: (u.email == null || u.email!.isEmpty)
+                                      ? 'Sin correo de recuperación'
+                                      : 'Restablecer contraseña por correo',
+                                  icon: const Icon(Icons.lock_reset),
+                                  onPressed:
+                                      (vm.cargando ||
+                                          u.email == null ||
+                                          u.email!.isEmpty)
+                                      ? null
+                                      : () => _restablecerPassword(u),
+                                ),
+                                IconButton(
+                                  tooltip: 'Dar de baja',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.red,
                                   ),
+                                  onPressed: vm.cargando
+                                      ? null
+                                      : () => _eliminarUsuario(u),
+                                ),
                               ],
                             ),
-                          ),
-                        ],
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _dniCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'DNI (opcional)',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _telefonoCtrl,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Teléfono de contacto (opcional)',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _elegirFecha,
-                          icon: const Icon(Icons.cake_outlined),
-                          label: Text(
-                            _fechaNacimiento == null
-                                ? 'Fecha de nacimiento (opcional)'
-                                : '${_fechaNacimiento!.day}/${_fechaNacimiento!.month}/${_fechaNacimiento!.year}',
-                          ),
-                        ),
-                        if (error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            error,
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: vm.cargando ? null : _crear,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: vm.cargando
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Crear cuenta'),
-                        ),
-                      ],
+  Widget _buildTabAlta(UsuarioViewModel vm) {
+    final error = _errorLocal ?? vm.mensajeError;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Card(
+            color: AppColors.surface,
+            elevation: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _nombreCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre completo *',
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Usuarios registrados',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                for (final u in vm.usuarios)
-                  ListTile(
-                    dense: true,
-                    title: Text(u.nombre),
-                    subtitle: Text('${u.nombreUsuario} · ${_nombreRol(u.rol)}'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _usuarioCtrl,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de usuario * (ej. lucas.gomez)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<RolUsuario>(
+                    initialValue: _rol,
+                    decoration: const InputDecoration(
+                      labelText: 'Perfil *',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final r in RolUsuario.values)
+                        DropdownMenuItem(value: r, child: Text(_nombreRol(r))),
+                    ],
+                    onChanged: (r) => setState(() {
+                      _rol = r ?? _rol;
+                      if (_rol != RolUsuario.familiar) {
+                        _alumnosSeleccionadosIds.clear();
+                      }
+                    }),
+                  ),
+                  if (_rol == RolUsuario.familiar) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBlue,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primary.withAlpha(60),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Alumno(s) vinculados a este familiar *',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (vm.alumnos.isEmpty)
+                            const Text(
+                              'No hay alumnos registrados todavía. Crea primero la cuenta del alumno.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSoft,
+                              ),
+                            )
+                          else
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: vm.alumnos.map((alumno) {
+                                final seleccionado = _alumnosSeleccionadosIds
+                                    .contains(alumno.id);
+                                return FilterChip(
+                                  label: Text(alumno.nombre),
+                                  selected: seleccionado,
+                                  onSelected: (val) {
+                                    setState(() {
+                                      if (val) {
+                                        _alumnosSeleccionadosIds.add(alumno.id);
+                                      } else {
+                                        _alumnosSeleccionadosIds.remove(
+                                          alumno.id,
+                                        );
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _dniCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'DNI (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _telefonoCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono de contacto (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo de recuperación (opcional)',
+                      helperText:
+                          'Necesario para poder restablecer la contraseña por correo.',
+                      helperMaxLines: 2,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _elegirFecha,
+                    icon: const Icon(Icons.cake_outlined),
+                    label: Text(
+                      _fechaNacimiento == null
+                          ? 'Fecha de nacimiento (opcional)'
+                          : '${_fechaNacimiento!.day}/${_fechaNacimiento!.month}/${_fechaNacimiento!.year}',
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      error,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: vm.cargando ? null : _crear,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: vm.cargando
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Crear cuenta'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

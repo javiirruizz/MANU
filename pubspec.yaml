@@ -51,6 +51,8 @@ dependencies:
   http: ^1.6.0
   video_player: ^2.14.1
 
+  material_ui: any
+  cloud_functions: ^7.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

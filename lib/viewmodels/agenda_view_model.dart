@@ -8,7 +8,7 @@ import '../data/tarea_repository.dart';
 import '../models/meal_item.dart';
 import '../models/mood_option.dart';
 import '../models/tarea.dart';
-import 'package:flutter/material.dart'; // Para Icons si hiciera falta
+import 'package:material_ui/material_ui.dart'; // Para Icons si hiciera falta
 
 enum AgendaPeriod { morning, afternoon }
 

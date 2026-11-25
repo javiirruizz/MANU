@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_colors.dart';
 import '../../data/notificacion_repository.dart';
@@ -28,7 +28,9 @@ class EnviarNotificacionDialog extends StatefulWidget {
 class _EnviarNotificacionDialogState extends State<EnviarNotificacionDialog> {
   final _mensajeCtrl = TextEditingController();
   final _notiService = NotificacionService();
-  final _pictoRepo = PictogramaRepository(firestore: FirebaseFirestore.instance);
+  final _pictoRepo = PictogramaRepository(
+    firestore: FirebaseFirestore.instance,
+  );
 
   List<Usuario> _alumnos = [];
   String? _alumnoSeleccionadoId;

@@ -19,14 +19,27 @@ class AuthRepository {
 
   static const dominio = 'miagenda.app';
 
-  /// El usuario escribe "lucas.gomez"; Firebase Auth recibe un email interno.
+  /// Email interno para cuentas sin correo real.
   static String emailDe(String nombreUsuario) =>
       '${nombreUsuario.trim().toLowerCase()}@$dominio';
 
+  /// Busca con qué email está registrada la cuenta. Si no hay entrada
+  /// (cuentas antiguas), usa el email interno.
+  Future<String> _emailParaLogin(String nu) async {
+    try {
+      final doc = await _db.collection('nombresUsuario').doc(nu).get();
+      final email = doc.data()?['email'] as String?;
+      if (email != null && email.isNotEmpty) return email;
+    } catch (_) {}
+    return emailDe(nu);
+  }
+
   Future<Usuario> iniciarSesion(String nombreUsuario, String password) async {
+    final nu = nombreUsuario.trim().toLowerCase();
+
     try {
       final cred = await _auth.signInWithEmailAndPassword(
-        email: emailDe(nombreUsuario),
+        email: await _emailParaLogin(nu),
         password: password,
       );
       final doc = await _db.collection('usuarios').doc(cred.user!.uid).get();
@@ -47,7 +60,6 @@ class AuthRepository {
     }
   }
 
-  /// Recupera la sesión si el usuario ya había iniciado sesión antes.
   Future<Usuario?> restaurarSesion() async {
     final user = await _auth.authStateChanges().first;
     if (user == null) return null;
@@ -63,7 +75,12 @@ class AuthRepository {
 
   /// Cambio de contraseña obligatorio en el primer acceso.
   Future<void> cambiarPassword(String nueva) async {
-    final user = _auth.currentUser!;
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError(
+        'No hay ningún usuario autenticado para cambiar la contraseña.',
+      );
+    }
     await user.updatePassword(nueva);
     await _db.collection('usuarios').doc(user.uid).update({
       'debeCambiarPassword': false,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
@@ -164,9 +164,8 @@ class AdminHomePage extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => showDialog<void>(
                       context: context,
-                      builder: (_) => GestionMenuDialog(
-                        repository: MenuRepository(),
-                      ),
+                      builder: (_) =>
+                          GestionMenuDialog(repository: MenuRepository()),
                     ),
                     icon: const Icon(Icons.restaurant_menu),
                     label: const Text('Gestión de menú semanal'),

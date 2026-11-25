@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,7 +8,7 @@ import '../../viewmodels/agenda_view_model.dart';
 import 'barra_progreso_pausable.dart';
 import 'pictograma_imagen.dart';
 import 'reproductor_audio.dart';
-import 'reproductor_video.dart' hide ReproductorAudioWidget;
+import 'reproductor_video.dart';
 
 /// Horario del día: es la parte principal de la pantalla.
 class RoutineSection extends StatefulWidget {
@@ -254,8 +254,8 @@ class _TareaCard extends StatelessWidget {
   Future<void> _abrirEnlace(BuildContext context, String rawUrl) async {
     final urlFormateada =
         rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-            ? rawUrl
-            : 'https://$rawUrl';
+        ? rawUrl
+        : 'https://$rawUrl';
     final uri = Uri.tryParse(urlFormateada);
     if (uri != null) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -279,8 +279,8 @@ class _TareaCard extends StatelessWidget {
         color: actual
             ? context.palette.cardTint
             : completada
-                ? context.palette.background
-                : context.palette.surface,
+            ? context.palette.background
+            : context.palette.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: actual ? context.palette.primary : context.palette.divider,
@@ -385,7 +385,9 @@ class _TareaCard extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.check,
-                      color: completada ? Colors.white : context.palette.surface,
+                      color: completada
+                          ? Colors.white
+                          : context.palette.surface,
                       size: 52,
                     ),
                   ),
@@ -418,14 +420,20 @@ class _TareaCard extends StatelessWidget {
                     icon: const Icon(Icons.play_circle_fill, size: 26),
                     label: const Text(
                       'Ver vídeo',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 if (tieneEnlace)
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.palette.primary,
-                      side: BorderSide(color: context.palette.primary, width: 2),
+                      side: BorderSide(
+                        color: context.palette.primary,
+                        width: 2,
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -435,7 +443,10 @@ class _TareaCard extends StatelessWidget {
                     icon: const Icon(Icons.open_in_new, size: 24),
                     label: const Text(
                       'Abrir enlace',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
               ],

@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_colors.dart';
 import '../../data/menu_repository.dart';
@@ -23,7 +23,13 @@ class GestionMenuDialog extends StatefulWidget {
 }
 
 class _GestionMenuDialogState extends State<GestionMenuDialog> {
-  static const _diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+  static const _diasSemana = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+  ];
 
   late DateTime _lunesActual;
   int _diaSeleccionado = 0; // 0 = Lunes ... 4 = Viernes
@@ -37,14 +43,19 @@ class _GestionMenuDialogState extends State<GestionMenuDialog> {
   Pictograma? _picto2;
   Pictograma? _pictoPostre;
 
-  final _pictoRepo = PictogramaRepository(firestore: FirebaseFirestore.instance);
+  final _pictoRepo = PictogramaRepository(
+    firestore: FirebaseFirestore.instance,
+  );
 
   @override
   void initState() {
     super.initState();
     final hoy = DateTime.now();
-    _lunesActual = DateTime(hoy.year, hoy.month, hoy.day)
-        .subtract(Duration(days: hoy.weekday - 1));
+    _lunesActual = DateTime(
+      hoy.year,
+      hoy.month,
+      hoy.day,
+    ).subtract(Duration(days: hoy.weekday - 1));
     if (hoy.weekday >= 1 && hoy.weekday <= 5) {
       _diaSeleccionado = hoy.weekday - 1;
     }
@@ -200,7 +211,9 @@ class _GestionMenuDialogState extends State<GestionMenuDialog> {
             decoration: BoxDecoration(
               color: AppColors.cardBlue,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.4),
+              ),
             ),
             child: pictograma != null
                 ? ClipRRect(
@@ -208,14 +221,16 @@ class _GestionMenuDialogState extends State<GestionMenuDialog> {
                     child: Image.network(
                       pictograma.urlResuelta,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
+                      errorBuilder: (_, _, _) =>
                           const Icon(Icons.image, color: AppColors.primary),
                     ),
                   )
                 : const Tooltip(
                     message: 'Asociar pictograma',
-                    child: Icon(Icons.add_photo_alternate_outlined,
-                        color: AppColors.primary),
+                    child: Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
           ),
         ),

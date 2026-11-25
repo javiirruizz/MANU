@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ReproductorAudioWidget extends StatefulWidget {
   final String url;
@@ -60,10 +60,13 @@ class _ReproductorAudioWidgetState extends State<ReproductorAudioWidget> {
   @override
   Widget build(BuildContext context) {
     final bool reproduciendo = _estado == PlayerState.playing;
-    final double maxSegundos =
-        _duracion.inSeconds > 0 ? _duracion.inSeconds.toDouble() : 1.0;
-    final double valorActual =
-        _posicion.inSeconds.toDouble().clamp(0.0, maxSegundos);
+    final double maxSegundos = _duracion.inSeconds > 0
+        ? _duracion.inSeconds.toDouble()
+        : 1.0;
+    final double valorActual = _posicion.inSeconds.toDouble().clamp(
+      0.0,
+      maxSegundos,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -73,7 +76,9 @@ class _ReproductorAudioWidgetState extends State<ReproductorAudioWidget> {
           children: [
             IconButton(
               icon: Icon(
-                reproduciendo ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                reproduciendo
+                    ? Icons.pause_circle_filled
+                    : Icons.play_circle_fill,
                 size: 40,
                 color: Theme.of(context).colorScheme.primary,
               ),

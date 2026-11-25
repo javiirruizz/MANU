@@ -100,6 +100,7 @@ class Usuario {
     this.telefonoContacto,
     this.fechaNacimiento,
     Set<PermisoUsuario>? permisos,
+    this.email,
     this.puedeEditarPerfil = false,
     this.preferenciaVisualizacion = '',
     this.preferenciaEnvios = '',
@@ -116,6 +117,7 @@ class Usuario {
   final String? telefonoContacto;
   final DateTime? fechaNacimiento;
   final Set<PermisoUsuario>? _permisos;
+  final String? email;
   final bool puedeEditarPerfil;
   final String preferenciaVisualizacion;
   final String preferenciaEnvios;
@@ -152,6 +154,7 @@ class Usuario {
     DateTime? fechaNacimiento,
     RolUsuario? rol,
     Set<PermisoUsuario>? permisos,
+    String? email,
     bool? puedeEditarPerfil,
     String? preferenciaVisualizacion,
     String? preferenciaEnvios,
@@ -168,6 +171,7 @@ class Usuario {
       fechaNacimiento: fechaNacimiento ?? this.fechaNacimiento,
       rol: rol ?? this.rol,
       permisos: permisos ?? _permisos,
+      email: email ?? this.email,
       puedeEditarPerfil: puedeEditarPerfil ?? this.puedeEditarPerfil,
       preferenciaVisualizacion:
           preferenciaVisualizacion ?? this.preferenciaVisualizacion,
@@ -211,6 +215,7 @@ class Usuario {
       fechaNacimiento: parseFecha(m['fechaNacimiento']),
       rol: rol,
       permisos: permisos,
+      email: m['email'],
       puedeEditarPerfil: m['puedeEditarPerfil'] ?? false,
       preferenciaVisualizacion: m['preferenciaVisualizacion'] ?? '',
       preferenciaEnvios: m['preferenciaEnvios'] ?? '',
@@ -230,6 +235,7 @@ class Usuario {
         : Timestamp.fromDate(fechaNacimiento!),
     'rol': rol.name,
     'permisos': permisos.map((p) => p.name).toList(),
+    'email': email,
     'puedeEditarPerfil': puedeEditarPerfil,
     'preferenciaVisualizacion': preferenciaVisualizacion,
     'preferenciaEnvios': preferenciaEnvios,

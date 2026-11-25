@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/pictograma_repository.dart';
 import '../../viewmodels/pictograma_view_model.dart';
@@ -128,54 +128,53 @@ class _PictogramaSelectorDialogState extends State<PictogramaSelectorDialog> {
                   child: _vm.cargando
                       ? const Center(child: CircularProgressIndicator())
                       : _vm.resultados.isEmpty
-                          ? const Center(
-                              child: Text('No se encontraron pictogramas.'),
-                            )
-                          : GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                      ? const Center(
+                          child: Text('No se encontraron pictogramas.'),
+                        )
+                      : GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 4,
                                 mainAxisSpacing: 8,
                                 crossAxisSpacing: 8,
                                 childAspectRatio: 0.85,
                               ),
-                              itemCount: _vm.resultados.length,
-                              itemBuilder: (context, index) {
-                                final p = _vm.resultados[index];
-                                return InkWell(
-                                  onTap: () => Navigator.of(context).pop(p),
-                                  child: Card(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Expanded(
-                                            child: Image.network(
-                                              p.urlResuelta,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) =>
-                                                      const Icon(
-                                                Icons.image_outlined,
-                                                size: 48,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            p.nombre,
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                          itemCount: _vm.resultados.length,
+                          itemBuilder: (context, index) {
+                            final p = _vm.resultados[index];
+                            return InkWell(
+                              onTap: () => Navigator.of(context).pop(p),
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Image.network(
+                                          p.urlResuelta,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                                    Icons.image_outlined,
+                                                    size: 48,
+                                                  ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        p.nombre,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -191,4 +190,3 @@ class _PictogramaSelectorDialogState extends State<PictogramaSelectorDialog> {
     );
   }
 }
-

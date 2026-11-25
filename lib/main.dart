@@ -1,5 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -35,8 +35,12 @@ class MiAgendaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository())), //[cite: 13]
-        ChangeNotifierProvider(create: (_) => ThemeViewModel()), // Inyectamos el gestor de temas
+        ChangeNotifierProvider(
+          create: (_) => AuthViewModel(AuthRepository()),
+        ), //[cite: 13]
+        ChangeNotifierProvider(
+          create: (_) => ThemeViewModel(),
+        ), // Inyectamos el gestor de temas
       ],
       // Usamos Consumer para que MaterialApp escuche los cambios y se redibuje al instante
       child: Consumer<ThemeViewModel>(

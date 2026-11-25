@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_theme.dart';
@@ -25,7 +25,7 @@ class SelectorTemaWidget extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
-            
+
             // Selector de círculos de colores
             Wrap(
               spacing: 16,
@@ -45,27 +45,29 @@ class SelectorTemaWidget extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 24,
                       backgroundColor: _getColorForTema(tema),
-                      child: isSelected 
-                          ? const Icon(Icons.check, color: Colors.white) 
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white)
                           : null,
                     ),
                   ),
                 );
               }).toList(),
             ),
-            
+
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Divider(),
             ),
-            
+
             // Interruptor de Alto Contraste
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
                 'Modo Alto Contraste',
                 style: TextStyle(
-                  color: context.palette.textDark, // Usando la extensión de app_theme.dart
+                  color: context
+                      .palette
+                      .textDark, // Usando la extensión de app_theme.dart
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -74,8 +76,8 @@ class SelectorTemaWidget extends StatelessWidget {
                 style: TextStyle(color: context.palette.textSoft),
               ),
               value: themeVM.altoContraste,
-              activeColor: context.palette.primary,
-              onChanged: (value) => 
+              activeThumbColor: context.palette.primary,
+              onChanged: (value) =>
                   context.read<ThemeViewModel>().toggleAltoContraste(value),
             ),
           ],

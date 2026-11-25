@@ -6,7 +6,8 @@ import '../models/usuario.dart';
 
 class UsuarioViewModel extends ChangeNotifier {
   UsuarioViewModel(this._repository, {Usuario? solicitante})
-    : _solicitante = solicitante ??
+    : _solicitante =
+          solicitante ??
           const Usuario(
             id: 'admin_1',
             nombreUsuario: 'admin',
@@ -31,9 +32,8 @@ class UsuarioViewModel extends ChangeNotifier {
 
   Usuario get solicitante => _solicitante;
   List<Usuario> get usuarios => List.unmodifiable(_usuariosFiltrados);
-  List<Usuario> get alumnos => List.unmodifiable(
-    _usuarios.where((u) => u.rol == RolUsuario.alumno),
-  );
+  List<Usuario> get alumnos =>
+      List.unmodifiable(_usuarios.where((u) => u.rol == RolUsuario.alumno));
   Usuario? get usuarioSeleccionado => _usuarioSeleccionado;
   RolUsuario? get filtroRol => _filtroRol;
   String get filtroTexto => _filtroTexto;
@@ -111,6 +111,7 @@ class UsuarioViewModel extends ChangeNotifier {
     required String nombreUsuario,
     required RolUsuario rol,
     String? dni,
+    String? email,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
     List<String> alumnoIds = const [],
@@ -129,6 +130,7 @@ class UsuarioViewModel extends ChangeNotifier {
         dni: dni,
         telefonoContacto: telefonoContacto,
         fechaNacimiento: fechaNacimiento,
+        email: email,
         alumnoIds: alumnoIds,
       );
       _usuarios = [..._usuarios, creado.usuario];
@@ -137,6 +139,8 @@ class UsuarioViewModel extends ChangeNotifier {
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
     } on NombreUsuarioDuplicadoException catch (e) {
+      _mensajeError = e.toString();
+    } on CorreoEnUsoException catch (e) {
       _mensajeError = e.toString();
     } on ArgumentError catch (e) {
       _mensajeError = e.message.toString();
@@ -151,6 +155,108 @@ class UsuarioViewModel extends ChangeNotifier {
       notifyListeners();
     }
     return null;
+  }
+
+  Future<bool> modificarUsuario({
+    required String usuarioId,
+    required String nombre,
+    required String nombreUsuario,
+    String? dni,
+    String? telefonoContacto,
+    DateTime? fechaNacimiento,
+    List<String>? alumnoIds,
+  }) async {
+    _mensajeError = null;
+    _mensajeExito = null;
+    _cargando = true;
+    notifyListeners();
+
+    try {
+      final actualizado = await _repository.modificarUsuario(
+        solicitante: _solicitante,
+        usuarioId: usuarioId,
+        nombre: nombre,
+        nombreUsuario: nombreUsuario,
+        dni: dni,
+        telefonoContacto: telefonoContacto,
+        fechaNacimiento: fechaNacimiento,
+        alumnoIds: alumnoIds,
+      );
+      _reemplazar(actualizado);
+      _mensajeExito = 'Usuario "${actualizado.nombre}" actualizado.';
+      return true;
+    } on AccesoDenegadoException catch (e) {
+      _mensajeError = e.mensaje;
+    } on NombreUsuarioDuplicadoException catch (e) {
+      _mensajeError = e.toString();
+    } on CorreoEnUsoException catch (e) {
+      _mensajeError = e.toString();
+    } on ArgumentError catch (e) {
+      _mensajeError = e.message.toString();
+    } catch (e) {
+      _mensajeError = 'Error al modificar el usuario: $e';
+    } finally {
+      _cargando = false;
+      notifyListeners();
+    }
+    return false;
+  }
+
+  /// Devuelve el correo al que se envió el enlace, o null si falla.
+  Future<String?> restablecerPassword(String usuarioId) async {
+    _mensajeError = null;
+    _mensajeExito = null;
+    _cargando = true;
+    notifyListeners();
+
+    try {
+      final correo = await _repository.restablecerPassword(
+        solicitante: _solicitante,
+        usuarioId: usuarioId,
+      );
+      _mensajeExito = 'Correo de restablecimiento enviado a $correo.';
+      return correo;
+    } on AccesoDenegadoException catch (e) {
+      _mensajeError = e.mensaje;
+    } on ArgumentError catch (e) {
+      _mensajeError = e.message.toString();
+    } catch (e) {
+      _mensajeError = 'Error al restablecer la contraseña: $e';
+    } finally {
+      _cargando = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
+  Future<bool> eliminarUsuario(String usuarioId) async {
+    _mensajeError = null;
+    _mensajeExito = null;
+    _cargando = true;
+    notifyListeners();
+
+    try {
+      await _repository.eliminarUsuario(
+        solicitante: _solicitante,
+        usuarioId: usuarioId,
+      );
+      _usuarios = _usuarios.where((u) => u.id != usuarioId).toList();
+      if (_usuarioSeleccionado?.id == usuarioId) {
+        _usuarioSeleccionado = null;
+      }
+      _mensajeExito = 'Usuario "${usuarioId}" dado de baja.';
+      return true;
+    } on AccesoDenegadoException catch (e) {
+      _mensajeError = e.mensaje;
+    } on ArgumentError catch (e) {
+      _mensajeError = e.message.toString();
+    } catch (e) {
+      _mensajeError = 'Error al dar de baja el usuario: $e';
+    } finally {
+      _cargando = false;
+      notifyListeners();
+    }
+    return false;
   }
 
   Future<bool> cambiarRol(String usuarioId, RolUsuario nuevoRol) async {

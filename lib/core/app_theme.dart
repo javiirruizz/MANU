@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'app_colors.dart';
 
 /// Temas de color disponibles para el alumno
@@ -307,7 +307,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: altoContraste
-              ? BorderSide(color: palette.borderColor, width: palette.borderWidth)
+              ? BorderSide(
+                  color: palette.borderColor,
+                  width: palette.borderWidth,
+                )
               : BorderSide.none,
         ),
       ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_theme.dart'; // Importante
 import '../../viewmodels/agenda_view_model.dart';
@@ -91,7 +91,9 @@ class DateBar extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.green, // Cambio dinámico (el verde que defina el tema)
+              backgroundColor: context
+                  .palette
+                  .green, // Cambio dinámico (el verde que defina el tema)
               foregroundColor: context.palette.surface, // Cambio dinámico
               minimumSize: const Size(0, 64),
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -136,7 +138,8 @@ class _Bloque extends StatelessWidget {
             children: [
               Text(
                 titulo,
-                style: TextStyle( // Sin const
+                style: TextStyle(
+                  // Sin const
                   fontWeight: FontWeight.w800,
                   fontSize: 24,
                   color: context.palette.textDark, // Añadido color dinámico
@@ -144,7 +147,10 @@ class _Bloque extends StatelessWidget {
               ),
               Text(
                 detalle,
-                style: TextStyle(fontSize: 15, color: context.palette.textSoft), // Cambio dinámico sin const
+                style: TextStyle(
+                  fontSize: 15,
+                  color: context.palette.textSoft,
+                ), // Cambio dinámico sin const
               ),
             ],
           ),
@@ -170,14 +176,18 @@ class _PeriodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : context.palette.textDark; // Cambio dinámico
+    final color = selected
+        ? Colors.white
+        : context.palette.textDark; // Cambio dinámico
     return Semantics(
       button: true,
       selected: selected,
       label: label,
       excludeSemantics: true,
       child: Material(
-        color: selected ? context.palette.primary : Colors.transparent, // Cambio dinámico
+        color: selected
+            ? context.palette.primary
+            : Colors.transparent, // Cambio dinámico
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),

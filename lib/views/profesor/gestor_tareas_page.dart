@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_colors.dart';
 import '../../models/tarea.dart';
@@ -818,7 +818,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                       SizedBox(height: 4),
                       Text(
                         'Subiendo archivo a Firebase...',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSoft),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSoft,
+                        ),
                       ),
                     ],
                   ),
@@ -841,7 +844,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                     : AppColors.primary,
                               ),
                               label: Text(
-                                _audioUrl != null ? 'Audio listo' : 'Subir Audio',
+                                _audioUrl != null
+                                    ? 'Audio listo'
+                                    : 'Subir Audio',
                                 overflow: TextOverflow.ellipsis,
                               ),
                               onPressed: () async {
@@ -884,7 +889,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                     : AppColors.primary,
                               ),
                               label: Text(
-                                _videoUrl != null ? 'Vídeo listo' : 'Subir Vídeo',
+                                _videoUrl != null
+                                    ? 'Vídeo listo'
+                                    : 'Subir Vídeo',
                                 overflow: TextOverflow.ellipsis,
                               ),
                               onPressed: () async {
@@ -1041,7 +1048,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: hayConflicto || _guardando || widget.subiendoMultimedia
+                  onPressed:
+                      hayConflicto || _guardando || widget.subiendoMultimedia
                       ? null
                       : _ejecutarGuardado,
                 ),

@@ -1,17 +1,13 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../../core/app_theme.dart';
 import '../../core/app_colors.dart';
 import '../../data/audio_service.dart';
 import '../../models/tarea.dart';
 
 /// Barra de progreso visual y pausable para la tarea en curso (HU 17).
 class BarraProgresoPausable extends StatefulWidget {
-  const BarraProgresoPausable({
-    super.key,
-    required this.tarea,
-  });
+  const BarraProgresoPausable({super.key, required this.tarea});
 
   final Tarea tarea;
 
@@ -87,13 +83,16 @@ class _BarraProgresoPausableState extends State<BarraProgresoPausable> {
 
   @override
   Widget build(BuildContext context) {
-    final totalBruto = widget.tarea.horaFinal.difference(widget.tarea.horaInicio);
+    final totalBruto = widget.tarea.horaFinal.difference(
+      widget.tarea.horaInicio,
+    );
     final total = totalBruto.inSeconds > 0
         ? totalBruto
         : const Duration(minutes: 30);
 
-    final ahoraEfectivo =
-        _pausado && _inicioPausa != null ? _inicioPausa! : DateTime.now();
+    final ahoraEfectivo = _pausado && _inicioPausa != null
+        ? _inicioPausa!
+        : DateTime.now();
 
     var transcurrido =
         ahoraEfectivo.difference(widget.tarea.horaInicio) - _pausaAcumulada;
@@ -103,8 +102,10 @@ class _BarraProgresoPausableState extends State<BarraProgresoPausable> {
       transcurrido = total;
     }
 
-    final progreso =
-        (transcurrido.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
+    final progreso = (transcurrido.inMilliseconds / total.inMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
     final restante = total - transcurrido;
     final porcentaje = (progreso * 100).round();
 
@@ -137,7 +138,9 @@ class _BarraProgresoPausableState extends State<BarraProgresoPausable> {
                 Row(
                   children: [
                     Text(
-                      _pausado ? 'EN PAUSA · $porcentaje%' : 'Progreso · $porcentaje%',
+                      _pausado
+                          ? 'EN PAUSA · $porcentaje%'
+                          : 'Progreso · $porcentaje%',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -172,7 +175,9 @@ class _BarraProgresoPausableState extends State<BarraProgresoPausable> {
           FilledButton.icon(
             onPressed: _alternarPausa,
             style: FilledButton.styleFrom(
-              backgroundColor: _pausado ? AppColors.greenDark : AppColors.orange,
+              backgroundColor: _pausado
+                  ? AppColors.greenDark
+                  : AppColors.orange,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -185,10 +190,7 @@ class _BarraProgresoPausableState extends State<BarraProgresoPausable> {
             ),
             label: Text(
               _pausado ? 'Reanudar' : 'Pausar',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
           ),
         ],

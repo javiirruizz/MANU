@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Una tarea de la rutina del día.
 class RoutineTask {
@@ -27,15 +27,15 @@ class RoutineTask {
   final String? audioUrl;
 
   RoutineTask copyWith({bool? completed}) => RoutineTask(
-        id: id,
-        time: time,
-        title: title,
-        subtitle: subtitle,
-        icon: icon,
-        iconColor: iconColor,
-        iconBackground: iconBackground,
-        completed: completed ?? this.completed,
-        imageUrl: imageUrl ?? imageUrl,
-        audioUrl: audioUrl ?? audioUrl,
-      );
+    id: id,
+    time: time,
+    title: title,
+    subtitle: subtitle,
+    icon: icon,
+    iconColor: iconColor,
+    iconBackground: iconBackground,
+    completed: completed ?? this.completed,
+    imageUrl: imageUrl ?? imageUrl,
+    audioUrl: audioUrl ?? audioUrl,
+  );
 }

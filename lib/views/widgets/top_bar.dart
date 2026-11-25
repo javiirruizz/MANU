@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
@@ -57,7 +57,8 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             'Mi Agenda',
-            style: TextStyle( // Sin const
+            style: TextStyle(
+              // Sin const
               fontSize: 26,
               fontWeight: FontWeight.w800,
               color: context.palette.primary, // Cambio dinámico
@@ -68,7 +69,9 @@ class TopBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: context.palette.tabTrack, // Cambio dinámico (usa el color base de la paleta)
+                color: context
+                    .palette
+                    .tabTrack, // Cambio dinámico (usa el color base de la paleta)
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -131,7 +134,8 @@ class TopBar extends StatelessWidget {
                       content: Text(
                         'Pictograma seleccionado: ${seleccionado.nombre}',
                       ),
-                      backgroundColor: context.palette.primary, // Cambio dinámico
+                      backgroundColor:
+                          context.palette.primary, // Cambio dinámico
                     ),
                   );
                 }
@@ -139,14 +143,16 @@ class TopBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          _SquareButton( // Sin const para permitir acceso al context internamente
+          _SquareButton(
+            // Sin const para permitir acceso al context internamente
             icon: Icons.settings_outlined,
             tooltip: 'Ajustes',
             background: context.palette.tabTrack,
             color: context.palette.textDark,
           ),
           const SizedBox(width: 8),
-          _SquareButton( // Sin const
+          _SquareButton(
+            // Sin const
             icon: Icons.logout,
             tooltip: 'Cerrar sesión',
             background: context.palette.tabTrack,
@@ -189,7 +195,8 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog( // Extraemos ctx del builder pero usamos context de la app para paleta
+      builder: (ctx) => AlertDialog(
+        // Extraemos ctx del builder pero usamos context de la app para paleta
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -202,7 +209,8 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
             Expanded(
               child: Text(
                 noti.titulo,
-                style: TextStyle( // Sin const
+                style: TextStyle(
+                  // Sin const
                   fontWeight: FontWeight.w800,
                   color: context.palette.primary, // Cambio dinámico
                 ),
@@ -221,22 +229,18 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
                   width: 180,
                   height: 180,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => PictogramaImagen(
-                    consulta: noti.mensaje,
-                    size: 160,
-                  ),
+                  errorBuilder: (_, _, _) =>
+                      PictogramaImagen(consulta: noti.mensaje, size: 160),
                 ),
               )
             else
-              PictogramaImagen(
-                consulta: noti.mensaje,
-                size: 160,
-              ),
+              PictogramaImagen(consulta: noti.mensaje, size: 160),
             const SizedBox(height: 16),
             Text(
               noti.mensaje,
               textAlign: TextAlign.center,
-              style: TextStyle( // Sin const
+              style: TextStyle(
+                // Sin const
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: context.palette.textDark, // Cambio dinámico
@@ -280,8 +284,9 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
       stream: _notiService.watchNotificacionesAlumno(widget.alumnoId),
       builder: (context, snapshot) {
         final todas = snapshot.data ?? [];
-        final noLeidas =
-            todas.where((n) => !n.estaLeidaPor(widget.alumnoId)).toList();
+        final noLeidas = todas
+            .where((n) => !n.estaLeidaPor(widget.alumnoId))
+            .toList();
 
         // Si llega una notificación urgente nueva sin leer, saltará al instante
         final pendientesDeMostrar = noLeidas
@@ -302,15 +307,22 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
             _SquareButton(
               icon: Icons.notifications_outlined,
               tooltip: 'Avisos (${noLeidas.length} sin leer)',
-              background:
-                  noLeidas.isNotEmpty ? AppColors.orangeSoft : context.palette.tabTrack, // Cambio dinámico (el naranja lo dejamos fijo porque es de alerta universal)
-              color: noLeidas.isNotEmpty ? AppColors.orange : context.palette.textDark, // Cambio dinámico
+              background: noLeidas.isNotEmpty
+                  ? AppColors.orangeSoft
+                  : context
+                        .palette
+                        .tabTrack, // Cambio dinámico (el naranja lo dejamos fijo porque es de alerta universal)
+              color: noLeidas.isNotEmpty
+                  ? AppColors.orange
+                  : context.palette.textDark, // Cambio dinámico
               onTap: () {
                 if (noLeidas.isNotEmpty) {
                   _mostrarAlertaUrgente(noLeidas.first);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No tienes avisos pendientes.')),
+                    const SnackBar(
+                      content: Text('No tienes avisos pendientes.'),
+                    ),
                   );
                 }
               },
@@ -359,15 +371,20 @@ class _TabItem extends StatelessWidget {
         height: 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? context.palette.primary : Colors.transparent, // Cambio dinámico
+          color: selected
+              ? context.palette.primary
+              : Colors.transparent, // Cambio dinámico
           borderRadius: BorderRadius.circular(11),
         ),
         child: Text(
           label,
-          style: TextStyle( // Sin const
+          style: TextStyle(
+            // Sin const
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : context.palette.textDark, // Cambio dinámico
+            color: selected
+                ? Colors.white
+                : context.palette.textDark, // Cambio dinámico
           ),
         ),
       ),
