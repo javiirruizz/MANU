@@ -164,6 +164,7 @@ class UsuarioViewModel extends ChangeNotifier {
     String? dni,
     String? telefonoContacto,
     DateTime? fechaNacimiento,
+    bool limpiarFechaNacimiento = false,
     List<String>? alumnoIds,
   }) async {
     _mensajeError = null;
@@ -180,6 +181,7 @@ class UsuarioViewModel extends ChangeNotifier {
         dni: dni,
         telefonoContacto: telefonoContacto,
         fechaNacimiento: fechaNacimiento,
+        limpiarFechaNacimiento: limpiarFechaNacimiento,
         alumnoIds: alumnoIds,
       );
       _reemplazar(actualizado);
@@ -236,6 +238,9 @@ class UsuarioViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final idx = _usuarios.indexWhere((u) => u.id == usuarioId);
+      final nombre = idx != -1 ? _usuarios[idx].nombre : null;
+
       await _repository.eliminarUsuario(
         solicitante: _solicitante,
         usuarioId: usuarioId,
@@ -244,7 +249,9 @@ class UsuarioViewModel extends ChangeNotifier {
       if (_usuarioSeleccionado?.id == usuarioId) {
         _usuarioSeleccionado = null;
       }
-      _mensajeExito = 'Usuario "${usuarioId}" dado de baja.';
+      _mensajeExito = nombre != null
+          ? 'Cuenta de "$nombre" dada de baja.'
+          : 'Cuenta dada de baja.';
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
