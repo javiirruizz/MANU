@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../data/tarea_repository.dart';
 import '../data/usuario_repository.dart';
 import '../data/storage_repositoty.dart';
+import '../models/paso.dart';
 import '../models/tarea.dart';
 import '../models/usuario.dart';
 import '../views/profesor/gestor_tareas_page.dart';
@@ -138,6 +139,19 @@ class GestorTareasViewModel extends ChangeNotifier {
     try {
       _actualizarIUCargando();
       await _tareaRepo.actualizarTarea(tarea);
+      _tareas = await _tareaRepo.getTareasPorFecha(_fechaSeleccionada);
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      _actualizarIUTieneInformacion();
+    }
+  }
+
+  Future<bool> actualizarPasos(String tareaId, List<Paso> pasos) async {
+    try {
+      _actualizarIUCargando();
+      await _tareaRepo.actualizarPasos(tareaId, pasos);
       _tareas = await _tareaRepo.getTareasPorFecha(_fechaSeleccionada);
       return true;
     } catch (e) {
