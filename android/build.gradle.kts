@@ -22,3 +22,16 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    val forceSdk = Action<Project> {
+        extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
+            compileSdkVersion(36)
+        }
+    }
+    if (state.executed) {
+        forceSdk.execute(this)
+    } else {
+        afterEvaluate(forceSdk)
+    }
+}
