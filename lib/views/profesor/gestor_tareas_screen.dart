@@ -21,17 +21,7 @@ class GestorTareasScreen extends StatefulWidget {
 }
 
 class _GestorTareasScreenState extends State<GestorTareasScreen> {
-  AuthViewModel? _leerAuth(BuildContext context, {bool listen = false}) {
-    try {
-      return Provider.of<AuthViewModel>(context, listen: listen);
-    } on ProviderNotFoundException {
-      return null;
-    }
-  }
-
-  bool _tieneAcceso(AuthViewModel? auth) {
-    if (auth == null) return true;
-    final user = auth.usuario;
+  bool _tieneAcceso(Usuario? user) {
     if (user == null) return false;
     if (user.rol == RolUsuario.alumno || user.rol == RolUsuario.familiar) {
       return false;
@@ -42,7 +32,8 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
   @override
   void initState() {
     super.initState();
-    if (_tieneAcceso(_leerAuth(context, listen: false))) {
+    final user = context.read<AuthViewModel>().usuario;
+    if (_tieneAcceso(user)) {
       // Cargar alumnos y tareas al iniciar la pantalla
       widget.viewModel.cargarDatos();
     }
@@ -50,8 +41,8 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = _leerAuth(context, listen: true);
-    if (!_tieneAcceso(auth)) {
+    final user = context.watch<AuthViewModel>().usuario;
+    if (!_tieneAcceso(user)) {
       return Scaffold(
         appBar: AppBar(title: const Text('Planificar tareas')),
         body: const Center(
