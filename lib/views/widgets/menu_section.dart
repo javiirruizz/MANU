@@ -1,11 +1,8 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:provider/provider.dart';
 
 import '../../core/app_theme.dart'; // Importante
 import '../../data/menu_repository.dart';
 import '../../models/menu.dart';
-import '../../viewmodels/auth_view_model.dart';
-import 'gestion_menu_dialog.dart';
 import 'pictograma_imagen.dart';
 import 'section_card.dart';
 
@@ -43,25 +40,8 @@ class _MenuSectionState extends State<MenuSection> {
     ).subtract(Duration(days: hoy.weekday - 1));
   }
 
-  bool _puedeEditar(BuildContext context) {
-    final usuario = context.watch<AuthViewModel>().usuario;
-    if (usuario == null) return false;
-    final rolTexto = usuario.rol.toString().toLowerCase();
-    return rolTexto.contains('profesor') || rolTexto.contains('admin');
-  }
-
-  void _abrirGestion() {
-    showDialog(
-      context: context,
-      builder: (_) =>
-          GestionMenuDialog(repository: _repo, comedorId: widget.comedorId),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final esGestor = _puedeEditar(context);
-
     return SectionCard(
       icon: Icons.restaurant,
       title: _verSemana ? 'MENÚ SEMANAL' : 'MENÚ',
@@ -87,24 +67,6 @@ class _MenuSectionState extends State<MenuSection> {
                   ), // Cambio dinámico
                 ),
               ),
-              if (esGestor)
-                ElevatedButton.icon(
-                  onPressed: _abrirGestion,
-                  icon: const Icon(Icons.edit_calendar, size: 16),
-                  label: const Text('Editar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.palette.primary, // Cambio dinámico
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 8),

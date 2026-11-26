@@ -1,4 +1,8 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/usuario.dart';
+import '../../viewmodels/auth_view_model.dart';
 import '../../viewmodels/gestor_tareas_view_model.dart';
 import 'gestor_tareas_page.dart';
 
@@ -17,15 +21,52 @@ class GestorTareasScreen extends StatefulWidget {
 }
 
 class _GestorTareasScreenState extends State<GestorTareasScreen> {
+  AuthViewModel? _leerAuth(BuildContext context, {bool listen = false}) {
+    try {
+      return Provider.of<AuthViewModel>(context, listen: listen);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  bool _tieneAcceso(AuthViewModel? auth) {
+    if (auth == null) return true;
+    final user = auth.usuario;
+    if (user == null) return false;
+    if (user.rol == RolUsuario.alumno || user.rol == RolUsuario.familiar) {
+      return false;
+    }
+    return user.tienePermiso(PermisoUsuario.gestionarTareas);
+  }
+
   @override
   void initState() {
     super.initState();
-    // Cargar alumnos y tareas al iniciar la pantalla
-    widget.viewModel.cargarDatos();
+    if (_tieneAcceso(_leerAuth(context, listen: false))) {
+      // Cargar alumnos y tareas al iniciar la pantalla
+      widget.viewModel.cargarDatos();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = _leerAuth(context, listen: true);
+    if (!_tieneAcceso(auth)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Planificar tareas')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Acceso denegado: la planificación de tareas es exclusiva para el profesorado.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18),
+            ),
+          ),
+        ),
+      );
+    }
+
     // ListenableBuilder redibuja la pantalla cada vez que el ViewModel ejecuta notifyListeners()
     return ListenableBuilder(
       listenable: widget.viewModel,

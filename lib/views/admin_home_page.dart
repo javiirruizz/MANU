@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../core/app_colors.dart';
 import '../data/horario_ejemplo.dart';
 import '../data/menu_repository.dart';
+import '../data/pictograma_repository.dart';
 import '../data/tarea_repository.dart';
 import '../data/usuario_repository.dart';
+import '../models/pictograma.dart';
 import '../models/usuario.dart';
 import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/gestor_tareas_view_model.dart';
@@ -16,6 +18,7 @@ import 'profesor/gestor_tareas_screen.dart';
 import 'widgets/enviar_notificacion_dialog.dart';
 import 'widgets/gestion_menu_dialog.dart';
 import 'widgets/gestion_roles_dialog.dart';
+import 'widgets/pictograma_selector_dialog.dart';
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
@@ -53,7 +56,23 @@ class AdminHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
-    final user = auth.usuario!;
+    final user = auth.usuario;
+    if (user == null ||
+        (!user.esAdministrador && user.rol != RolUsuario.profesor)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Panel de gestión')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Acceso denegado: este panel de gestión es exclusivo para profesorado y administración.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18),
+            ),
+          ),
+        ),
+      );
+    }
     final gap = const SizedBox(height: 12);
 
     return Scaffold(
@@ -93,17 +112,20 @@ class AdminHomePage extends StatelessWidget {
                 // --- Planificar Tareas (Botón Principal) ---
                 if (user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
                   FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => GestorTareasScreen(
-                          viewModel: GestorTareasViewModel(
-                            tareaRepo: TareaRepository(),
-                            usuarioRepo: UsuarioRepository(),
+                    onPressed: () {
+                      final vm = GestorTareasViewModel(
+                        tareaRepo: TareaRepository(),
+                        usuarioRepo: UsuarioRepository(),
+                      );
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => GestorTareasScreen(
+                            viewModel: vm,
+                            profesorId: user.id,
                           ),
-                          profesorId: user.id,
                         ),
-                      ),
-                    ),
+                      );
+                    },
                     icon: const Icon(Icons.add_task),
                     label: const Text('Planificar tareas'),
                     style: FilledButton.styleFrom(
@@ -159,8 +181,7 @@ class AdminHomePage extends StatelessWidget {
                 ],
 
                 // --- Gestión del Menú Semanal (HU 12) ---
-                if (user.esAdministrador ||
-                    user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
+                if (user.tienePermiso(PermisoUsuario.gestionarMenu)) ...[
                   OutlinedButton.icon(
                     onPressed: () => showDialog<void>(
                       context: context,
@@ -176,9 +197,37 @@ class AdminHomePage extends StatelessWidget {
                   gap,
                 ],
 
+                // --- Biblioteca de Pictogramas (HU 05) ---
+                if (user.tienePermiso(PermisoUsuario.gestionarPictogramas)) ...[
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final seleccionado = await showDialog<Pictograma>(
+                        context: context,
+                        builder: (_) => PictogramaSelectorDialog(
+                          repository: PictogramaRepository(),
+                        ),
+                      );
+                      if (seleccionado != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Pictograma seleccionado: ${seleccionado.nombre}',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Biblioteca de pictogramas'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  gap,
+                ],
+
                 // --- Enviar Aviso Push Personalizado (HU 35) ---
-                if (user.esAdministrador ||
-                    user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
+                if (user.tienePermiso(PermisoUsuario.gestionarTareas)) ...[
                   OutlinedButton.icon(
                     onPressed: () => showDialog<void>(
                       context: context,
@@ -202,7 +251,7 @@ class AdminHomePage extends StatelessWidget {
                     context,
                   ).push(MaterialPageRoute(builder: (_) => const AgendaPage())),
                   icon: const Icon(Icons.calendar_today),
-                  label: const Text('Ver la agenda'),
+                  label: const Text('Vista previa de la agenda'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),

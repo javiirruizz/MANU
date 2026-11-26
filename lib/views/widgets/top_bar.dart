@@ -4,15 +4,10 @@ import 'package:provider/provider.dart';
 import '../../core/app_colors.dart';
 import '../../data/audio_service.dart';
 import '../../data/notificacion_repository.dart';
-import '../../data/pictograma_repository.dart';
-import '../../data/usuario_repository.dart';
 import '../../models/notificacion.dart';
-import '../../models/pictograma.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
-import 'gestion_roles_dialog.dart';
 import 'pictograma_imagen.dart';
-import 'pictograma_selector_dialog.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
 
 /// Barra superior: logo, pestañas y accesos rápidos.
@@ -32,10 +27,6 @@ class TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
     final usuario = auth.usuario;
-    final puedeRoles =
-        usuario?.tienePermiso(PermisoUsuario.gestionarRolesYPermisos) ?? false;
-    final puedePictos =
-        usuario?.tienePermiso(PermisoUsuario.gestionarPictogramas) ?? false;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -95,54 +86,6 @@ class TopBar extends StatelessWidget {
             const SizedBox(width: 8),
           ],
 
-          if (puedeRoles) ...[
-            _SquareButton(
-              icon: Icons.admin_panel_settings_outlined,
-              tooltip: 'Gestión de Roles y Permisos (HU 03)',
-              background: context.palette.tabTrack, // Cambio dinámico
-              color: context.palette.primary, // Cambio dinámico
-              onTap: () async {
-                final usuario = context.read<AuthViewModel>().usuario;
-                if (usuario == null) return;
-                await showDialog(
-                  context: context,
-                  builder: (_) => GestionRolesDialog(
-                    repository: UsuarioRepository(),
-                    solicitante: usuario,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
-          if (puedePictos) ...[
-            _SquareButton(
-              icon: Icons.photo_library_outlined,
-              tooltip: 'Biblioteca de Pictogramas (HU 05)',
-              background: context.palette.badge, // Cambio dinámico
-              color: context.palette.primary, // Cambio dinámico
-              onTap: () async {
-                final seleccionado = await showDialog<Pictograma>(
-                  context: context,
-                  builder: (_) => PictogramaSelectorDialog(
-                    repository: PictogramaRepository(),
-                  ),
-                );
-                if (seleccionado != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Pictograma seleccionado: ${seleccionado.nombre}',
-                      ),
-                      backgroundColor:
-                          context.palette.primary, // Cambio dinámico
-                    ),
-                  );
-                }
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
           _SquareButton(
             // Sin const para permitir acceso al context internamente
             icon: Icons.settings_outlined,
