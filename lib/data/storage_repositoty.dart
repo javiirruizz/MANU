@@ -61,6 +61,22 @@ class StorageRepository {
     );
   }
 
+  Future<String?> seleccionarYSubirFotoPerfil() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (image == null) return null;
+    final bytes = await image.readAsBytes();
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+    return _subirACloudinary(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'perfiles',
+    );
+  }
+
   Future<String?> seleccionarYSubirVideo() async {
     final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
     if (video == null) return null;

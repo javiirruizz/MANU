@@ -9,6 +9,7 @@ import 'barra_progreso_pausable.dart';
 import 'pictograma_imagen.dart';
 import 'reproductor_audio.dart';
 import 'reproductor_video.dart';
+import 'valoracion_dialog.dart';
 
 /// Horario del día: es la parte principal de la pantalla.
 class RoutineSection extends StatefulWidget {
@@ -188,12 +189,23 @@ class _RoutineSectionState extends State<RoutineSection> {
       itemBuilder: (context, i) {
         final t = tareas[i];
         return ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: _altoTarjeta),
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.sizeOf(context).height < 900
+                ? 124.0
+                : _altoTarjeta,
+          ),
           child: _TareaCard(
             tarea: t,
             actual: vm.esActual(t),
             completada: vm.esCompletada(t),
-            onToggle: () => vm.toggleTask(t.id),
+            onToggle: () async {
+              final yaHecha = vm.esCompletada(t);
+              await vm.toggleTask(t.id);
+              // HU 22: al terminar la tarea se abre el panel de emoción
+              if (!yaHecha && context.mounted) {
+                mostrarValoracion(context, vm: vm, tarea: t);
+              }
+            },
           ),
         );
       },
@@ -297,7 +309,7 @@ class _TareaCard extends StatelessWidget {
                 url: url,
                 id: tarea.pictogramaId,
                 consulta: tarea.nombre,
-                size: 118,
+                size: MediaQuery.sizeOf(context).height < 900 ? 92 : 118,
                 iconoReserva: Icons.event_note_outlined,
                 opacidad: completada ? 0.5 : 1,
               ),

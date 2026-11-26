@@ -97,6 +97,12 @@ class UsuarioRepository {
 
   final List<Usuario> _usuariosLocales = List.of(_usuariosIniciales);
 
+  /// HU 06: guarda la foto de perfil (solo cambia ese campo).
+  Future<void> actualizarFotoPerfil(String usuarioId, String url) {
+    final db = _db ?? FirebaseFirestore.instance;
+    return db.collection('usuarios').doc(usuarioId).update({'fotoUrl': url});
+  }
+
   Future<List<Usuario>> getAlumnos() =>
       listarUsuarios(filtroRol: RolUsuario.alumno);
 

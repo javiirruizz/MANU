@@ -86,4 +86,12 @@ class AuthViewModel extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// HU 06: actualiza la foto del usuario con sesión y avisa a todas las vistas.
+  void actualizarFotoLocal(String url) {
+    final u = _usuario;
+    if (u == null) return;
+    _usuario = u.copyWith(fotoUrl: url);
+    notifyListeners();
+  }
 }

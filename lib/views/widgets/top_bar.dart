@@ -12,6 +12,9 @@ import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'gestion_roles_dialog.dart';
 import 'pictograma_imagen.dart';
+import 'avatar_usuario.dart';
+import 'perfil_dialog.dart';
+import '../notificaciones_page.dart';
 import 'pictograma_selector_dialog.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
 
@@ -93,6 +96,8 @@ class TopBar extends StatelessWidget {
           if (usuario != null && usuario.rol == RolUsuario.alumno) ...[
             _ReceptorNotificaciones(alumnoId: usuario.id),
             const SizedBox(width: 8),
+            BotonBandeja(alumno: usuario),
+            const SizedBox(width: 8),
           ],
 
           if (puedeRoles) ...[
@@ -140,6 +145,21 @@ class TopBar extends StatelessWidget {
                   );
                 }
               },
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (usuario != null) ...[
+            Tooltip(
+              message: 'Mi perfil',
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => mostrarPerfil(context),
+                child: AvatarUsuario(
+                  nombre: usuario.nombre,
+                  fotoUrl: usuario.fotoUrl,
+                  size: 56,
+                ),
+              ),
             ),
             const SizedBox(width: 8),
           ],

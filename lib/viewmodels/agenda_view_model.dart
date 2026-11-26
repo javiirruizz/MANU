@@ -8,6 +8,7 @@ import '../data/tarea_repository.dart';
 import '../models/meal_item.dart';
 import '../models/mood_option.dart';
 import '../models/tarea.dart';
+import '../models/valoracion.dart';
 import 'package:material_ui/material_ui.dart'; // Para Icons si hiciera falta
 
 enum AgendaPeriod { morning, afternoon }
@@ -235,6 +236,42 @@ class AgendaViewModel extends ChangeNotifier {
       final j = _tareas.indexWhere((t) => t.id == id);
       if (j != -1) _tareas[j] = original;
       _error = 'No se pudo guardar el cambio.';
+      notifyListeners();
+    }
+  }
+
+  /// HU 22: guarda emoción y estrellas de una tarea terminada.
+  Future<void> guardarValoracion(
+    String tareaId,
+    String emocionId,
+    int estrellas,
+  ) async {
+    final i = _tareas.indexWhere((t) => t.id == tareaId);
+    if (i == -1) return;
+    final original = _tareas[i];
+    _tareas[i] = original.copyWith(
+      valoraciones: {
+        ...original.valoraciones,
+        alumnoId: ValoracionTarea(
+          emocionId: emocionId,
+          estrellas: estrellas,
+          fecha: DateTime.now(),
+        ),
+      },
+    );
+    notifyListeners();
+    try {
+      await _tareaRepo.guardarValoracion(
+        tareaId: tareaId,
+        alumnoId: alumnoId,
+        emocionId: emocionId,
+        estrellas: estrellas,
+      );
+    } catch (e) {
+      debugPrint('Error guardando valoración: $e');
+      final j = _tareas.indexWhere((t) => t.id == tareaId);
+      if (j != -1) _tareas[j] = original;
+      _error = 'No se pudo guardar tu valoración.';
       notifyListeners();
     }
   }

@@ -149,4 +149,36 @@ class TareaRepository {
     }
     await batch.commit();
   }
+
+  /// HU 22: guarda la emoción y las estrellas del alumno en el registro de la tarea.
+  Future<void> guardarValoracion({
+    required String tareaId,
+    required String alumnoId,
+    required String emocionId,
+    required int estrellas,
+  }) {
+    return _firestore.collection('tareas').doc(tareaId).update({
+      'valoraciones.$alumnoId': {
+        'emocion': emocionId,
+        'estrellas': estrellas,
+        'fecha': FieldValue.serverTimestamp(),
+      },
+    });
+  }
+
+  /// HU 29: historial de tareas de un alumno (hasta hoy), más recientes primero.
+  Future<List<Tarea>> getHistorialAlumno(String alumnoId) async {
+    final snap = await _firestore
+        .collection('tareas')
+        .where('alumnoIds', arrayContains: alumnoId)
+        .get();
+    final manana = DateTime.now().add(const Duration(days: 1));
+    final limite = DateTime(manana.year, manana.month, manana.day);
+    final lista = snap.docs
+        .map((d) => Tarea.fromMap(d.id, d.data()))
+        .where((t) => t.fecha.isBefore(limite))
+        .toList()
+      ..sort((a, b) => b.horaInicio.compareTo(a.horaInicio));
+    return lista;
+  }
 }
