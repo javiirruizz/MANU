@@ -272,6 +272,13 @@ class _TareaCard extends StatelessWidget {
     final tieneVideo = tarea.videoUrl != null && tarea.videoUrl!.isNotEmpty;
     // Verifica que el campo en tu modelo Tarea se llame enlaceWeb
     final tieneEnlace = tarea.enlaceWeb != null && tarea.enlaceWeb!.isNotEmpty;
+    final pasosOrdenados = List.of(tarea.pasos)
+      ..sort((a, b) => a.orden.compareTo(b.orden));
+    final mostrarPasos =
+        pasosOrdenados.isNotEmpty &&
+        !(tarea.creadaPor == 'ejemplo' &&
+            pasosOrdenados.length == 1 &&
+            pasosOrdenados.first.descripcion == tarea.nombre);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -395,6 +402,73 @@ class _TareaCard extends StatelessWidget {
               ),
             ],
           ),
+          if (mostrarPasos) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.palette.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.palette.divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.format_list_numbered,
+                        size: 22,
+                        color: context.palette.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pasos a seguir',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: context.palette.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  for (final p in pasosOrdenados) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 13,
+                          backgroundColor: context.palette.primary,
+                          child: Text(
+                            '${p.orden}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            p.descripcion,
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w600,
+                              color: completada
+                                  ? context.palette.textSoft
+                                  : context.palette.textDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           // Reproductor de audio con Play / Pausa integrado
           if (tieneAudio) ...[
             const SizedBox(height: 10),

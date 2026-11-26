@@ -97,8 +97,11 @@ class UsuarioRepository {
 
   final List<Usuario> _usuariosLocales = List.of(_usuariosIniciales);
 
-  Future<List<Usuario>> getAlumnos() =>
-      listarUsuarios(filtroRol: RolUsuario.alumno);
+  Future<List<Usuario>> getAlumnos({bool soloActivos = true}) async {
+    final lista = await listarUsuarios(filtroRol: RolUsuario.alumno);
+    if (!soloActivos) return lista;
+    return lista.where((u) => u.estado == EstadoCuenta.activa).toList();
+  }
 
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     final db = _db;

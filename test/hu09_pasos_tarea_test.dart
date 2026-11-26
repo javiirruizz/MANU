@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:manu/data/usuario_repository.dart';
 import 'package:manu/models/paso.dart';
 import 'package:manu/models/tarea.dart';
 import 'package:manu/models/usuario.dart';
@@ -216,5 +217,25 @@ void main() {
         expect(tareaGuardada!.pasos.map((p) => p.orden).toList(), [1, 2]);
       },
     );
+
+    test('getAlumnos solo devuelve alumnos con cuenta activa', () async {
+      final repo = UsuarioRepository();
+      const admin = Usuario(
+        id: 'admin_1',
+        nombreUsuario: 'admin',
+        nombre: 'Usuario Administrador',
+        rol: RolUsuario.administrador,
+      );
+
+      await repo.cambiarEstado(
+        solicitante: admin,
+        usuarioId: 'alum_2',
+        nuevoEstado: EstadoCuenta.baja,
+      );
+
+      final activos = await repo.getAlumnos();
+      expect(activos.any((a) => a.id == 'alum_1'), isTrue);
+      expect(activos.any((a) => a.id == 'alum_2'), isFalse);
+    });
   });
 }
