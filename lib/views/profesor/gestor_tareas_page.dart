@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_colors.dart';
+import '../../models/paso.dart';
 import '../../models/tarea.dart';
 import '../../models/usuario.dart';
 
@@ -71,6 +72,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   final _descCtrl = TextEditingController();
   final _aulaCtrl = TextEditingController();
   final _enlaceWebCtrl = TextEditingController();
+  final _nuevoPasoCtrl = TextEditingController();
+  List<Paso> _pasos = [];
   String? _audioUrl;
   String? _videoUrl;
 
@@ -92,6 +95,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     _aulaCtrl.dispose();
     _filtroAulaCtrl.dispose();
     _enlaceWebCtrl.dispose();
+    _nuevoPasoCtrl.dispose();
     super.dispose();
   }
 
@@ -109,8 +113,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     _descCtrl.clear();
     _aulaCtrl.clear();
     _enlaceWebCtrl.clear();
+    _nuevoPasoCtrl.clear();
     setState(() {
       _tareaEnEdicion = null;
+      _pasos = [];
       _alumnoSeleccionadoId = null;
       _audioUrl = null;
       _videoUrl = null;
@@ -129,6 +135,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       _descCtrl.text = tarea.descripcion;
       _aulaCtrl.text = tarea.aulaId;
       _enlaceWebCtrl.text = tarea.enlaceWeb ?? '';
+      _nuevoPasoCtrl.clear();
+      _pasos = List<Paso>.from(tarea.pasos)
+        ..sort((a, b) => a.orden.compareTo(b.orden));
       _audioUrl = tarea.audioUrl;
       _videoUrl = tarea.videoUrl;
       _horaInicio = TimeOfDay.fromDateTime(tarea.horaInicio);
@@ -145,6 +154,59 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
         _alumnosGrupalesIds.addAll(tarea.alumnoIds);
       }
     });
+  }
+
+  List<Paso> _renumerarPasos(List<Paso> lista) => [
+    for (var i = 0; i < lista.length; i++) lista[i].copyWith(orden: i + 1),
+  ];
+
+  void _agregarPaso() {
+    final texto = _nuevoPasoCtrl.text.trim();
+    if (texto.isEmpty) return;
+
+    final nuevo = Paso(
+      id: 'paso_${DateTime.now().microsecondsSinceEpoch}_${_pasos.length + 1}',
+      descripcion: texto,
+      orden: _pasos.length + 1,
+    );
+    _nuevoPasoCtrl.clear();
+    setState(() => _pasos = [..._pasos, nuevo]);
+  }
+
+  void _reordenarPasos(int oldIndex, int newIndex) {
+    final lista = List<Paso>.from(_pasos);
+    final movido = lista.removeAt(oldIndex);
+    lista.insert(newIndex, movido);
+    setState(() => _pasos = _renumerarPasos(lista));
+  }
+
+  void _moverPaso(int index, int delta) {
+    final destino = index + delta;
+    if (destino < 0 || destino >= _pasos.length) return;
+    final lista = List<Paso>.from(_pasos);
+    final movido = lista.removeAt(index);
+    lista.insert(destino, movido);
+    setState(() => _pasos = _renumerarPasos(lista));
+  }
+
+  Future<void> _editarPaso(int index) async {
+    final nuevoTexto = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditarPasoDialog(
+        descripcionInicial: _pasos[index].descripcion,
+      ),
+    );
+    if (nuevoTexto == null || !mounted) return;
+    setState(() {
+      final lista = List<Paso>.from(_pasos);
+      lista[index] = lista[index].copyWith(descripcion: nuevoTexto);
+      _pasos = lista;
+    });
+  }
+
+  void _eliminarPaso(int index) {
+    final lista = List<Paso>.from(_pasos)..removeAt(index);
+    setState(() => _pasos = _renumerarPasos(lista));
   }
 
   DateTime _combinarFechaYHora(DateTime fecha, TimeOfDay hora) {
@@ -560,6 +622,35 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                               color: AppColors.primary,
                                             ),
                                           ),
+                                        if (tarea.pasos.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 4,
+                                            ),
+                                            child: Tooltip(
+                                              message:
+                                                  '${tarea.pasos.length} paso(s)',
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.checklist,
+                                                    size: 16,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                  Text(
+                                                    '${tarea.pasos.length}',
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                     if (tarea.descripcion.isNotEmpty)
@@ -922,6 +1013,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 ),
               const SizedBox(height: 16),
 
+              // ---- LISTA DE VERIFICACIÓN / PASOS (HU 09) ----
+              _buildSeccionPasos(),
+              const SizedBox(height: 16),
+
               // ---- HORARIO ESCOLAR ----
               const Text(
                 'Horario Escolar:',
@@ -1058,6 +1153,132 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSeccionPasos() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Lista de verificación / Paso a paso (Opcional):',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _nuevoPasoCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Añadir paso...',
+                  hintText: 'Ej. Sacar el cuaderno de la mochila',
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onSubmitted: (_) => _agregarPaso(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir'),
+              onPressed: _agregarPaso,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_pasos.isEmpty)
+          const Text(
+            'Sin pasos. Añade pasos y ordénalos para guiar al alumno.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSoft),
+          )
+        else
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: _pasos.length,
+            onReorderItem: _reordenarPasos,
+            itemBuilder: (context, index) {
+              final paso = _pasos[index];
+              return Container(
+                key: ValueKey(paso.id),
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.chip,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        paso.descripcion,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_upward, size: 18),
+                      tooltip: 'Subir paso',
+                      onPressed: index == 0 ? null : () => _moverPaso(index, -1),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_downward, size: 18),
+                      tooltip: 'Bajar paso',
+                      onPressed: index == _pasos.length - 1
+                          ? null
+                          : () => _moverPaso(index, 1),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      tooltip: 'Editar paso',
+                      onPressed: () => _editarPaso(index),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Colors.redAccent,
+                      ),
+                      tooltip: 'Eliminar paso',
+                      onPressed: () => _eliminarPaso(index),
+                    ),
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: AppColors.textSoft,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -1293,7 +1514,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       aulaId: _aulaCtrl.text.trim(),
       creadaPor: widget.profesorId,
       alumnoIds: alumnosAsignados,
-      pasos: esEdicion ? _tareaEnEdicion!.pasos : const [],
+      pasos: _renumerarPasos(_pasos),
       contingenciaIds: esEdicion ? _tareaEnEdicion!.contingenciaIds : const [],
       completadaPor: esEdicion ? _tareaEnEdicion!.completadaPor : const {},
       pictogramas: esEdicion ? _tareaEnEdicion!.pictogramas : const [],
@@ -1334,5 +1555,62 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
+  }
+}
+
+class _EditarPasoDialog extends StatefulWidget {
+  const _EditarPasoDialog({required this.descripcionInicial});
+
+  final String descripcionInicial;
+
+  @override
+  State<_EditarPasoDialog> createState() => _EditarPasoDialogState();
+}
+
+class _EditarPasoDialogState extends State<_EditarPasoDialog> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.descripcionInicial);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _guardar() {
+    final texto = _ctrl.text.trim();
+    if (texto.isEmpty) return;
+    Navigator.of(context).pop(texto);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar paso'),
+      content: TextField(
+        controller: _ctrl,
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: 'Descripción del paso',
+          border: OutlineInputBorder(),
+        ),
+        onSubmitted: (_) => _guardar(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardar,
+          child: const Text('Guardar'),
+        ),
+      ],
+    );
   }
 }

@@ -13,6 +13,22 @@ class Paso {
   final String estado;
   final String? pictogramaId;
 
+  Paso copyWith({
+    String? id,
+    String? descripcion,
+    int? orden,
+    String? estado,
+    String? pictogramaId,
+  }) {
+    return Paso(
+      id: id ?? this.id,
+      descripcion: descripcion ?? this.descripcion,
+      orden: orden ?? this.orden,
+      estado: estado ?? this.estado,
+      pictogramaId: pictogramaId ?? this.pictogramaId,
+    );
+  }
+
   factory Paso.fromMap(String id, Map<String, dynamic> m) => Paso(
     id: id,
     descripcion: m['descripcion'] ?? '',
