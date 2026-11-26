@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'paso.dart';
+import 'valoracion.dart';
 import 'pictograma.dart';
 
 /// Modelo de datos que representa una tarea.
@@ -21,6 +22,7 @@ class Tarea {
     this.alumnoIds = const [],
     this.contingenciaIds = const [],
     this.completadaPor = const {},
+    this.valoraciones = const {},
     this.pictogramas = const [],
     this.imagenAdjuntaUrl,
     this.audioUrl,
@@ -41,6 +43,7 @@ class Tarea {
   final List<String> alumnoIds; // "se asigna a"
   final List<String> contingenciaIds; // "prepara"
   final Map<String, DateTime> completadaPor; // idAlumno -> timestamp
+  final Map<String, ValoracionTarea> valoraciones; // idAlumno -> emoción y estrellas (HU 22)
   final List<Pictograma> pictogramas; // relación muchos a muchos (* a *)
   final String? imagenAdjuntaUrl;
   final String? audioUrl;
@@ -70,6 +73,7 @@ class Tarea {
     List<String>? alumnoIds,
     List<String>? contingenciaIds,
     Map<String, DateTime>? completadaPor,
+    Map<String, ValoracionTarea>? valoraciones,
     List<Pictograma>? pictogramas,
     String? imagenAdjuntaUrl,
     String? audioUrl,
@@ -90,6 +94,7 @@ class Tarea {
       alumnoIds: alumnoIds ?? this.alumnoIds,
       contingenciaIds: contingenciaIds ?? this.contingenciaIds,
       completadaPor: completadaPor ?? this.completadaPor,
+      valoraciones: valoraciones ?? this.valoraciones,
       pictogramas: pictogramas ?? this.pictogramas,
       imagenAdjuntaUrl: imagenAdjuntaUrl ?? this.imagenAdjuntaUrl,
       audioUrl: audioUrl ?? this.audioUrl,
@@ -160,6 +165,7 @@ class Tarea {
       contingenciaIds: List<String>.from(m['contingenciaIds'] ?? []),
       pictogramas: parsedPictogramas,
       completadaPor: completadaPor,
+      valoraciones: ValoracionTarea.mapaDesde(m['valoraciones']),
       imagenAdjuntaUrl: m['imagenAdjuntaUrl'] as String?,
       audioUrl: m['audioUrl'] as String?,
       videoUrl: m['videoUrl'] as String?,

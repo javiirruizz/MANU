@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
 import '../models/usuario.dart';
+import 'widgets/avatar_usuario.dart';
 import '../viewmodels/usuario_view_model.dart';
 
 class AltaUsuarioPage extends StatefulWidget {
@@ -376,6 +377,11 @@ class _AltaUsuarioPageState extends State<AltaUsuarioPage> {
                         itemBuilder: (_, index) {
                           final u = vm.usuarios[index];
                           return ListTile(
+                            leading: AvatarUsuario(
+                              nombre: u.nombre,
+                              fotoUrl: u.fotoUrl,
+                              size: 44,
+                            ),
                             title: Text(
                               u.nombre,
                               style: const TextStyle(

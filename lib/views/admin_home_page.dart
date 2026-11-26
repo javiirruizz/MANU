@@ -13,6 +13,9 @@ import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/gestor_tareas_view_model.dart';
 import '../viewmodels/usuario_view_model.dart';
 import 'agenda_page.dart';
+import 'profesor/seguimiento_page.dart';
+import 'widgets/avatar_usuario.dart';
+import 'widgets/perfil_dialog.dart';
 import 'alta_usuario_page.dart';
 import 'profesor/gestor_tareas_screen.dart';
 import 'widgets/enviar_notificacion_dialog.dart';
@@ -98,6 +101,18 @@ class AdminHomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => mostrarPerfil(context),
+                    child: AvatarUsuario(
+                      nombre: user.nombre,
+                      fotoUrl: user.fotoUrl,
+                      size: 96,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Text(
                   'Hola, ${user.nombre}',
                   textAlign: TextAlign.center,
@@ -245,6 +260,32 @@ class AdminHomePage extends StatelessWidget {
                   gap,
                 ],
 
+                // --- Panel de seguimiento (HU 29) ---
+                if (user.tienePermiso(PermisoUsuario.verSeguimiento)) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SeguimientoPage()),
+                    ),
+                    icon: const Icon(Icons.insights_outlined),
+                    label: const Text('Panel de seguimiento'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  gap,
+                ],
+
+                // --- Mi perfil (HU 06) ---
+                OutlinedButton.icon(
+                  onPressed: () => mostrarPerfil(context),
+                  icon: const Icon(Icons.account_circle_outlined),
+                  label: const Text('Mi perfil y foto'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+                gap,
+
                 // --- Ver la Agenda ---
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(
@@ -261,7 +302,7 @@ class AdminHomePage extends StatelessWidget {
                   TextButton.icon(
                     onPressed: () => _cargarHorario(context),
                     icon: const Icon(Icons.science_outlined),
-                    label: const Text('Cargar horario de ejemplo (semana)'),
+                    label: const Text('Cargar horario de ejemplo (3 semanas)'),
                   ),
                 ],
               ],

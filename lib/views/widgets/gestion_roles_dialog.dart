@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/app_colors.dart';
 import '../../data/usuario_repository.dart';
 import '../../models/usuario.dart';
+import 'avatar_usuario.dart';
 import '../../viewmodels/usuario_view_model.dart';
 
 class GestionRolesDialog extends StatefulWidget {
@@ -239,15 +240,10 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                                       ),
                                       child: Row(
                                         children: [
-                                          CircleAvatar(
-                                            radius: 18,
-                                            backgroundColor: rolColor
-                                                .withValues(alpha: 0.15),
-                                            child: Icon(
-                                              _iconoRol(u.rol),
-                                              color: rolColor,
-                                              size: 20,
-                                            ),
+                                          AvatarUsuario(
+                                            nombre: u.nombre,
+                                            fotoUrl: u.fotoUrl,
+                                            size: 40,
                                           ),
                                           const SizedBox(width: 10),
                                           Expanded(
@@ -400,14 +396,10 @@ class _GestionRolesDialogState extends State<GestionRolesDialog> {
                               ),
                               child: Row(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: _colorRol(uSel.rol),
-                                    child: Icon(
-                                      _iconoRol(uSel.rol),
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
+                                  AvatarUsuario(
+                                    nombre: uSel.nombre,
+                                    fotoUrl: uSel.fotoUrl,
+                                    size: 48,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(

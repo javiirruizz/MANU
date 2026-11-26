@@ -103,6 +103,13 @@ class UsuarioRepository {
     return lista.where((u) => u.estado == EstadoCuenta.activa).toList();
   }
 
+  /// HU 06: guarda la foto de perfil (solo cambia ese campo).
+  Future<void> actualizarFotoPerfil(String usuarioId, String url) async {
+    final db = _db;
+    if (db == null) return;
+    await db.collection('usuarios').doc(usuarioId).update({'fotoUrl': url});
+  }
+
   Future<List<Usuario>> listarUsuarios({RolUsuario? filtroRol}) async {
     final db = _db;
     if (db != null) {

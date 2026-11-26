@@ -39,6 +39,9 @@ class _FakeAuthViewModel extends ChangeNotifier implements AuthViewModel {
 
   @override
   Future<void> cerrarSesion() async {}
+
+  @override
+  void actualizarFotoLocal(String url) {}
 }
 
 void main() {
@@ -107,6 +110,7 @@ void main() {
         expect(find.text('Gestión de menú semanal'), findsNothing);
         expect(find.text('Biblioteca de pictogramas'), findsNothing);
         expect(find.text('Enviar aviso urgente'), findsNothing);
+        expect(find.text('Panel de seguimiento'), findsNothing);
         expect(find.text('Editar'), findsNothing);
         expect(find.text('Volver al panel'), findsNothing);
         expect(

@@ -8,6 +8,9 @@ import '../../models/notificacion.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'pictograma_imagen.dart';
+import 'avatar_usuario.dart';
+import 'perfil_dialog.dart';
+import '../notificaciones_page.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
 
 /// Barra superior: logo, pestañas y accesos rápidos.
@@ -84,8 +87,25 @@ class TopBar extends StatelessWidget {
           if (usuario != null && usuario.rol == RolUsuario.alumno) ...[
             _ReceptorNotificaciones(alumnoId: usuario.id),
             const SizedBox(width: 8),
+            BotonBandeja(alumno: usuario),
+            const SizedBox(width: 8),
           ],
 
+          if (usuario != null) ...[
+            Tooltip(
+              message: 'Mi perfil',
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => mostrarPerfil(context),
+                child: AvatarUsuario(
+                  nombre: usuario.nombre,
+                  fotoUrl: usuario.fotoUrl,
+                  size: 56,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           _SquareButton(
             // Sin const para permitir acceso al context internamente
             icon: Icons.settings_outlined,

@@ -64,8 +64,8 @@ const _franjas = [
   ),
 ];
 
-/// Crea el horario de la semana actual (lunes a viernes; si hoy es fin de
-/// semana, el de la semana siguiente) para los alumnos indicados.
+/// Crea el horario de 3 semanas (la actual y las 2 siguientes, de lunes a
+/// viernes; si hoy es fin de semana, desde el lunes siguiente) para los alumnos indicados.
 /// Es seguro repetirlo: reemplaza el horario de ejemplo anterior.
 /// Devuelve cuántas tareas ha creado.
 Future<int> cargarHorarioEjemplo({
@@ -91,8 +91,10 @@ Future<int> cargarHorarioEjemplo({
 
   String dos(int n) => n.toString().padLeft(2, '0');
   final tareas = <Tarea>[];
-  for (var d = 0; d < 5; d++) {
+  // 3 semanas seguidas, solo de lunes a viernes
+  for (var d = 0; d < 21; d++) {
     final dia = lunes.add(Duration(days: d));
+    if (dia.weekday >= DateTime.saturday) continue;
     for (var n = 0; n < _franjas.length; n++) {
       final f = _franjas[n];
       final pid = ids[n];
@@ -126,7 +128,7 @@ Future<int> cargarHorarioEjemplo({
   await repo.reemplazarHorarioEjemplo(
     tareas: tareas,
     desde: lunes,
-    hasta: lunes.add(const Duration(days: 5)),
+    hasta: lunes.add(const Duration(days: 21)),
   );
   return tareas.length;
 }

@@ -109,6 +109,7 @@ class Usuario {
     this.preferenciaEnvios = '',
     this.comedorId,
     this.debeCambiarPassword = false,
+    this.fotoUrl,
     this.alumnoIds = const [],
   }) : _permisos = permisos;
 
@@ -127,6 +128,7 @@ class Usuario {
   final String preferenciaEnvios;
   final String? comedorId;
   final bool debeCambiarPassword;
+  final String? fotoUrl; // HU 06: foto o pictograma de perfil
   final List<String> alumnoIds; // Alumnos vinculados si el rol es familiar
 
   Set<PermisoUsuario> get permisos => _permisos != null
@@ -165,6 +167,7 @@ class Usuario {
     String? preferenciaEnvios,
     String? comedorId,
     bool? debeCambiarPassword,
+    String? fotoUrl,
     List<String>? alumnoIds,
   }) {
     return Usuario(
@@ -184,6 +187,7 @@ class Usuario {
       preferenciaEnvios: preferenciaEnvios ?? this.preferenciaEnvios,
       comedorId: comedorId ?? this.comedorId,
       debeCambiarPassword: debeCambiarPassword ?? this.debeCambiarPassword,
+      fotoUrl: fotoUrl ?? this.fotoUrl,
       alumnoIds: alumnoIds ?? this.alumnoIds,
     );
   }
@@ -229,6 +233,7 @@ class Usuario {
       preferenciaEnvios: m['preferenciaEnvios'] ?? '',
       comedorId: m['comedorId'],
       debeCambiarPassword: m['debeCambiarPassword'] ?? false,
+      fotoUrl: m['fotoUrl'] as String?,
       alumnoIds: List<String>.from(m['alumnoIds'] ?? []),
     );
   }
@@ -250,6 +255,7 @@ class Usuario {
     'preferenciaEnvios': preferenciaEnvios,
     'comedorId': comedorId,
     'debeCambiarPassword': debeCambiarPassword,
+    if (fotoUrl != null) 'fotoUrl': fotoUrl,
     'alumnoIds': alumnoIds,
   };
 }
