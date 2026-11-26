@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/paso.dart';
 import '../models/tarea.dart';
 
 class TareaRepository {
@@ -54,6 +55,15 @@ class TareaRepository {
     if (dataToUpdate.isNotEmpty) {
       await _firestore.collection('tareas').doc(tareaId).update(dataToUpdate);
     }
+  }
+
+  Future<void> actualizarPasos(String tareaId, List<Paso> pasos) async {
+    final normalizados = [
+      for (var i = 0; i < pasos.length; i++) pasos[i].copyWith(orden: i + 1),
+    ];
+    await _firestore.collection('tareas').doc(tareaId).update({
+      'pasos': normalizados.map((p) => p.toMap()).toList(),
+    });
   }
 
   /// Tareas del alumno para un día, en tiempo real.

@@ -191,6 +191,59 @@ class Tarea {
   static String hhmm(DateTime d) =>
       '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
+  Tarea agregarPaso(String descripcion, {String? pictogramaId}) {
+    final texto = descripcion.trim();
+    if (texto.isEmpty) {
+      throw ArgumentError('La descripción del paso no puede estar vacía.');
+    }
+    final nuevo = Paso(
+      id: 'paso_${DateTime.now().microsecondsSinceEpoch}_${pasos.length + 1}',
+      descripcion: texto,
+      orden: pasos.length + 1,
+      pictogramaId: pictogramaId,
+    );
+    return copyWith(pasos: [...pasos, nuevo]);
+  }
+
+  Tarea editarPaso(String pasoId, String nuevaDescripcion) {
+    final texto = nuevaDescripcion.trim();
+    if (texto.isEmpty) {
+      throw ArgumentError('La descripción del paso no puede estar vacía.');
+    }
+    final actualizados = pasos
+        .map((p) => p.id == pasoId ? p.copyWith(descripcion: texto) : p)
+        .toList();
+    return copyWith(pasos: actualizados);
+  }
+
+  Tarea eliminarPaso(String pasoId) {
+    final filtrados = pasos.where((p) => p.id != pasoId).toList();
+    final normalizados = [
+      for (var i = 0; i < filtrados.length; i++)
+        filtrados[i].copyWith(orden: i + 1),
+    ];
+    return copyWith(pasos: normalizados);
+  }
+
+  Tarea reordenarPasos(int indiceOrigen, int indiceDestino) {
+    if (indiceOrigen < 0 ||
+        indiceOrigen >= pasos.length ||
+        indiceDestino < 0 ||
+        indiceDestino >= pasos.length) {
+      throw RangeError('Índice de paso fuera de rango.');
+    }
+    if (indiceOrigen == indiceDestino) return this;
+
+    final lista = List<Paso>.from(pasos);
+    final movido = lista.removeAt(indiceOrigen);
+    lista.insert(indiceDestino, movido);
+
+    final normalizados = [
+      for (var i = 0; i < lista.length; i++) lista[i].copyWith(orden: i + 1),
+    ];
+    return copyWith(pasos: normalizados);
+  }
+
   /// Convierte la entidad a un mapa compatible con JSON o Firebase.
   /// [includePictogramas] permite evitar referencias circulares durante la serialización.
   Map<String, dynamic> toMap({bool includePictogramas = false}) => {
