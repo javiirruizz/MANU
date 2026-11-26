@@ -394,19 +394,20 @@ class UsuarioRepository {
     return correo;
   }
 
-  Future<void> eliminarUsuario({
+  Future<Usuario> cambiarEstado({
     required Usuario solicitante,
     required String usuarioId,
+    required EstadoCuenta nuevoEstado,
   }) async {
     verificarAcceso(
       usuario: solicitante,
       permisoRequerido: PermisoUsuario.gestionarUsuarios,
-      accion: 'dar de baja una cuenta',
+      accion: 'suspender o dar de baja una cuenta',
     );
 
-    if (solicitante.id == usuarioId) {
+    if (solicitante.id == usuarioId && nuevoEstado != EstadoCuenta.activa) {
       throw const AccesoDenegadoException(
-        'No puedes dar de baja tu propia cuenta mientras tienes la sesión iniciada.',
+        'No puedes suspender ni dar de baja tu propia cuenta.',
       );
     }
 
@@ -415,25 +416,34 @@ class UsuarioRepository {
       throw ArgumentError('Usuario con id $usuarioId no encontrado.');
     }
 
-    if (actual.rol == RolUsuario.administrador) {
+    if (actual.rol == RolUsuario.administrador &&
+        nuevoEstado != EstadoCuenta.activa) {
       final todos = await listarUsuarios();
-      final numAdmins = todos
-          .where((u) => u.rol == RolUsuario.administrador)
+      final adminsActivos = todos
+          .where(
+            (u) =>
+                u.rol == RolUsuario.administrador &&
+                u.estado == EstadoCuenta.activa,
+          )
           .length;
-      if (numAdmins <= 1) {
+      if (adminsActivos <= 1) {
         throw const AccesoDenegadoException(
-          'Operación no permitida: debe existir al menos un administrador.',
+          'Operación no permitida: debe existir al menos un administrador activo.',
         );
       }
     }
 
-    await _db
-        ?.collection('nombresUsuario')
-        .doc(actual.nombreUsuario.toLowerCase())
-        .delete();
+    final actualizado = actual.copyWith(estado: nuevoEstado);
 
-    _usuariosLocales.removeWhere((u) => u.id == usuarioId);
-    await _db?.collection('usuarios').doc(usuarioId).delete();
+    final idx = _usuariosLocales.indexWhere((u) => u.id == usuarioId);
+    if (idx != -1) _usuariosLocales[idx] = actualizado;
+
+    await _db?.collection('usuarios').doc(usuarioId).update({
+      'estado': nuevoEstado.name,
+      'estadoActualizadoEn': FieldValue.serverTimestamp(),
+    });
+
+    return actualizado;
   }
 
   // ---------------------------------------------------------------------

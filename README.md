@@ -27,3 +27,6 @@ git push -u origin main
 ## Ejecutar esto en vuestro proyecto
 
 flutter pub add firebase_core image_picker firebase_storage audioplayers flutter_tts flutter_local_notifications timezone
+
+**Para imprimir**
+flutter pub add pdf printing 

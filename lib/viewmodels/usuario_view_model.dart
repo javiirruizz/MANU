@@ -25,6 +25,7 @@ class UsuarioViewModel extends ChangeNotifier {
   List<Usuario> _usuarios = [];
   Usuario? _usuarioSeleccionado;
   RolUsuario? _filtroRol;
+  bool _verBajas = false;
   String _filtroTexto = '';
   bool _cargando = false;
   String? _mensajeError;
@@ -32,10 +33,14 @@ class UsuarioViewModel extends ChangeNotifier {
 
   Usuario get solicitante => _solicitante;
   List<Usuario> get usuarios => List.unmodifiable(_usuariosFiltrados);
-  List<Usuario> get alumnos =>
-      List.unmodifiable(_usuarios.where((u) => u.rol == RolUsuario.alumno));
+  List<Usuario> get alumnos => List.unmodifiable(
+    _usuarios.where(
+      (u) => u.rol == RolUsuario.alumno && u.estado == EstadoCuenta.activa,
+    ),
+  );
   Usuario? get usuarioSeleccionado => _usuarioSeleccionado;
   RolUsuario? get filtroRol => _filtroRol;
+  bool get verBajas => _verBajas;
   String get filtroTexto => _filtroTexto;
   bool get cargando => _cargando;
   String? get mensajeError => _mensajeError;
@@ -50,7 +55,11 @@ class UsuarioViewModel extends ChangeNotifier {
           u.nombre.toLowerCase().contains(query) ||
           u.nombreUsuario.toLowerCase().contains(query) ||
           (u.dni ?? '').toLowerCase().contains(query);
-      return cumpleRol && cumpleTexto;
+
+      final cumpleEstado = _verBajas
+          ? u.estado == EstadoCuenta.baja
+          : u.estado != EstadoCuenta.baja;
+      return cumpleRol && cumpleTexto && cumpleEstado;
     }).toList();
   }
 
@@ -70,6 +79,11 @@ class UsuarioViewModel extends ChangeNotifier {
 
   void filtrarPorRol(RolUsuario? rol) {
     _filtroRol = rol;
+    notifyListeners();
+  }
+
+  void alternarBajas() {
+    _verBajas = !_verBajas;
     notifyListeners();
   }
 
@@ -231,34 +245,32 @@ class UsuarioViewModel extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> eliminarUsuario(String usuarioId) async {
+  Future<bool> cambiarEstado(String usuarioId, EstadoCuenta nuevoEstado) async {
     _mensajeError = null;
     _mensajeExito = null;
     _cargando = true;
     notifyListeners();
 
     try {
-      final idx = _usuarios.indexWhere((u) => u.id == usuarioId);
-      final nombre = idx != -1 ? _usuarios[idx].nombre : null;
-
-      await _repository.eliminarUsuario(
+      final actualizado = await _repository.cambiarEstado(
         solicitante: _solicitante,
         usuarioId: usuarioId,
+        nuevoEstado: nuevoEstado,
       );
-      _usuarios = _usuarios.where((u) => u.id != usuarioId).toList();
-      if (_usuarioSeleccionado?.id == usuarioId) {
-        _usuarioSeleccionado = null;
-      }
-      _mensajeExito = nombre != null
-          ? 'Cuenta de "$nombre" dada de baja.'
-          : 'Cuenta dada de baja.';
+
+      _reemplazar(actualizado);
+      _mensajeExito = switch (nuevoEstado) {
+        EstadoCuenta.activa => 'Cuenta reactivada.',
+        EstadoCuenta.suspendida => 'Cuenta suspendida.',
+        EstadoCuenta.baja => 'Usuario dado de baja y archivado.',
+      };
       return true;
     } on AccesoDenegadoException catch (e) {
       _mensajeError = e.mensaje;
     } on ArgumentError catch (e) {
       _mensajeError = e.message.toString();
     } catch (e) {
-      _mensajeError = 'Error al dar de baja el usuario: $e';
+      _mensajeError = 'Error al cambiar el estado de la cuenta: $e';
     } finally {
       _cargando = false;
       notifyListeners();
