@@ -5,6 +5,7 @@ import '../../models/paso.dart';
 import '../../models/tarea.dart';
 import '../../models/usuario.dart';
 import '../../data/agenda_pdf_service.dart';
+import '../../models/menu.dart';
 
 enum TipoAsignacion { individual, grupal, recurrente }
 
@@ -26,6 +27,7 @@ class GestorTareasPage extends StatefulWidget {
     this.subiendoMultimedia = false,
     this.onSubirVideo,
     this.onSubirAudio,
+    this.onObtenerMenusSemana,
   });
 
   final List<Usuario> alumnos;
@@ -35,6 +37,8 @@ class GestorTareasPage extends StatefulWidget {
   final bool subiendoMultimedia;
   final Future<String?> Function()? onSubirVideo;
   final Future<String?> Function()? onSubirAudio;
+  final Future<List<Menu>> Function(String comedorId, DateTime lunes)?
+  onObtenerMenusSemana;
 
   final Future<void> Function(
     Tarea nuevaTarea,
@@ -89,34 +93,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
 
   bool _guardando = false;
 
-  static const _nombresDia = [
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-    'Domingo',
-  ];
-  static const _nombresMes = [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ];
-
   DateTime _lunesDe(DateTime f) =>
       DateTime(f.year, f.month, f.day).subtract(Duration(days: f.weekday - 1));
-
-  String _fechaLarga(DateTime d) => '${d.day} de ${_nombresMes[d.month - 1]}';
 
   /// Pictograma de la tarea: el primero asociado o, si no, el del último paso.
   String? _urlPictograma(Tarea t) {
@@ -127,6 +105,36 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     final id = t.pictogramaId;
     if (id == null || id.isEmpty) return null;
     return 'https://static.arasaac.org/pictograms/$id/${id}_300.png';
+  }
+
+  String? _urlPlato(PlatoMenu p) {
+    final url = p.pictogramaUrl;
+    if (url != null && url.startsWith('http')) return url;
+    final id = p.pictogramaId;
+    // Los pictogramas subidos por el centro ("custom_...") no están en ARASAAC
+    if (id == null || id.isEmpty || id.startsWith('custom_')) return null;
+    return 'https://static.arasaac.org/pictograms/$id/${id}_300.png';
+  }
+
+  List<PlatoPdf> _platosPdf(Menu? m) {
+    if (m == null) return const [];
+    return [
+      PlatoPdf(
+        etiqueta: '1º plato',
+        nombre: m.primerPlato.nombre,
+        pictogramaUrl: _urlPlato(m.primerPlato),
+      ),
+      PlatoPdf(
+        etiqueta: '2º plato',
+        nombre: m.segundoPlato.nombre,
+        pictogramaUrl: _urlPlato(m.segundoPlato),
+      ),
+      PlatoPdf(
+        etiqueta: 'Postre',
+        nombre: m.postre.nombre,
+        pictogramaUrl: _urlPlato(m.postre),
+      ),
+    ];
   }
 
   Future<void> _exportar({required bool imprimir}) async {
@@ -152,7 +160,32 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       return;
     }
 
-    // Lunes a viernes siempre; sábado y domingo solo si tienen tareas
+    // Comedor del alumno filtrado (o el principal en la vista de grupo)
+    final comedorId =
+        widget.alumnos
+            .where((a) => a.id == _filtroAlumnoId)
+            .map((a) => a.comedorId)
+            .firstOrNull ??
+        'comedor_principal';
+
+    var menus = <Menu>[];
+    if (widget.onObtenerMenusSemana != null) {
+      try {
+        menus = await widget.onObtenerMenusSemana!(comedorId, lunes);
+      } catch (_) {
+        // Sin menú: se imprime el bloque vacío
+      }
+    }
+
+    Menu? menuDe(DateTime d) => menus
+        .where(
+          (m) =>
+              m.fecha.year == d.year &&
+              m.fecha.month == d.month &&
+              m.fecha.day == d.day,
+        )
+        .firstOrNull;
+
     final dias = <DiaPdf>[];
     for (var i = 0; i < 7; i++) {
       final dia = lunes.add(Duration(days: i));
@@ -166,16 +199,22 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               )
               .toList()
             ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
-      if (i >= 5 && delDia.isEmpty) continue;
+      if (i >= 5 && delDia.isEmpty) continue; // fin de semana vacío
+
       dias.add(
-        DiaPdf('${_nombresDia[i]} ${dia.day}', [
-          for (final t in delDia)
-            TareaPdf(
-              hora: '${Tarea.hhmm(t.horaInicio)} - ${Tarea.hhmm(t.horaFinal)}',
-              nombre: t.nombre,
-              pictogramaUrl: _urlPictograma(t),
-            ),
-        ]),
+        DiaPdf(
+          fecha: dia,
+          menu: _platosPdf(menuDe(dia)),
+          tareas: [
+            for (final t in delDia)
+              TareaPdf(
+                inicio: t.horaInicio,
+                fin: t.horaFinal,
+                nombre: t.nombre,
+                pictogramaUrl: _urlPictograma(t),
+              ),
+          ],
+        ),
       );
     }
 
@@ -200,9 +239,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     try {
       final servicio = AgendaPdfService();
       final bytes = await servicio.generar(
-        titulo: 'Agenda semanal · $nombreAlumno',
-        subtitulo:
-            'Semana del ${_fechaLarga(lunes)} al ${_fechaLarga(domingo)}',
+        titulo: 'Agenda · $nombreAlumno',
         dias: dias,
       );
       final archivo = 'agenda_${lunes.year}-${lunes.month}-${lunes.day}';
@@ -211,7 +248,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       } else {
         await servicio.compartir(bytes, archivo);
       }
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Error PDF: $e\n$st');
       messenger.showSnackBar(
         SnackBar(content: Text('No se pudo generar el PDF: $e')),
       );

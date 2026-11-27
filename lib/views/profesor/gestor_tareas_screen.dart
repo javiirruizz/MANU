@@ -5,6 +5,7 @@ import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import '../../viewmodels/gestor_tareas_view_model.dart';
 import 'gestor_tareas_page.dart';
+import '../../data/menu_repository.dart';
 
 class GestorTareasScreen extends StatefulWidget {
   const GestorTareasScreen({
@@ -28,6 +29,8 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
     }
     return user.tienePermiso(PermisoUsuario.gestionarTareas);
   }
+
+  final _menuRepo = MenuRepository();
 
   @override
   void initState() {
@@ -94,6 +97,11 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
           onFechaCambiada: (nuevaFecha) async {
             await widget.viewModel.cambiarFecha(nuevaFecha);
           },
+          onObtenerMenusSemana: (comedorId, lunes) => _menuRepo.getMenus(
+            comedorId,
+            desde: lunes,
+            hasta: lunes.add(const Duration(days: 7)),
+          ),
         );
       },
     );
