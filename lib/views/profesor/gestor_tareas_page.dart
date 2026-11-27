@@ -4,6 +4,7 @@ import '../../core/app_colors.dart';
 import '../../models/paso.dart';
 import '../../models/tarea.dart';
 import '../../models/usuario.dart';
+import '../../data/agenda_pdf_service.dart';
 
 enum TipoAsignacion { individual, grupal, recurrente }
 
@@ -87,6 +88,135 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   TimeOfDay _horaFin = const TimeOfDay(hour: 10, minute: 0);
 
   bool _guardando = false;
+
+  static const _nombresDia = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
+  static const _nombresMes = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+
+  DateTime _lunesDe(DateTime f) =>
+      DateTime(f.year, f.month, f.day).subtract(Duration(days: f.weekday - 1));
+
+  String _fechaLarga(DateTime d) => '${d.day} de ${_nombresMes[d.month - 1]}';
+
+  /// Pictograma de la tarea: el primero asociado o, si no, el del último paso.
+  String? _urlPictograma(Tarea t) {
+    if (t.pictogramas.isNotEmpty) {
+      final u = t.pictogramas.first.urlResuelta;
+      return u.startsWith('http') ? u : null;
+    }
+    final id = t.pictogramaId;
+    if (id == null || id.isEmpty) return null;
+    return 'https://static.arasaac.org/pictograms/$id/${id}_300.png';
+  }
+
+  Future<void> _exportar({required bool imprimir}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final lunes = _lunesDe(_fechaSeleccionada);
+    final domingo = lunes.add(const Duration(days: 6));
+
+    // Tareas de la semana, de un alumno o de todos (grupo)
+    final semana = widget.tareas.where((t) {
+      final f = DateTime(t.fecha.year, t.fecha.month, t.fecha.day);
+      final enSemana = !f.isBefore(lunes) && !f.isAfter(domingo);
+      final delAlumno =
+          _filtroAlumnoId == null || t.alumnoIds.contains(_filtroAlumnoId);
+      return enSemana && delAlumno;
+    }).toList();
+
+    if (semana.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No hay tareas esta semana para exportar.'),
+        ),
+      );
+      return;
+    }
+
+    // Lunes a viernes siempre; sábado y domingo solo si tienen tareas
+    final dias = <DiaPdf>[];
+    for (var i = 0; i < 7; i++) {
+      final dia = lunes.add(Duration(days: i));
+      final delDia =
+          semana
+              .where(
+                (t) =>
+                    t.fecha.year == dia.year &&
+                    t.fecha.month == dia.month &&
+                    t.fecha.day == dia.day,
+              )
+              .toList()
+            ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio));
+      if (i >= 5 && delDia.isEmpty) continue;
+      dias.add(
+        DiaPdf('${_nombresDia[i]} ${dia.day}', [
+          for (final t in delDia)
+            TareaPdf(
+              hora: '${Tarea.hhmm(t.horaInicio)} - ${Tarea.hhmm(t.horaFinal)}',
+              nombre: t.nombre,
+              pictogramaUrl: _urlPictograma(t),
+            ),
+        ]),
+      );
+    }
+
+    final nombreAlumno = _filtroAlumnoId == null
+        ? 'Todos los alumnos'
+        : widget.alumnos
+              .firstWhere(
+                (a) => a.id == _filtroAlumnoId,
+                orElse: () => Usuario(
+                  id: '',
+                  nombreUsuario: '',
+                  nombre: 'Alumno',
+                  rol: RolUsuario.alumno,
+                ),
+              )
+              .nombre;
+
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Preparando el documento...')),
+    );
+
+    try {
+      final servicio = AgendaPdfService();
+      final bytes = await servicio.generar(
+        titulo: 'Agenda semanal · $nombreAlumno',
+        subtitulo:
+            'Semana del ${_fechaLarga(lunes)} al ${_fechaLarga(domingo)}',
+        dias: dias,
+      );
+      final archivo = 'agenda_${lunes.year}-${lunes.month}-${lunes.day}';
+      if (imprimir) {
+        await servicio.imprimir(bytes, archivo);
+      } else {
+        await servicio.compartir(bytes, archivo);
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('No se pudo generar el PDF: $e')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -192,9 +322,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   Future<void> _editarPaso(int index) async {
     final nuevoTexto = await showDialog<String>(
       context: context,
-      builder: (_) => _EditarPasoDialog(
-        descripcionInicial: _pasos[index].descripcion,
-      ),
+      builder: (_) =>
+          _EditarPasoDialog(descripcionInicial: _pasos[index].descripcion),
     );
     if (nuevoTexto == null || !mounted) return;
     setState(() {
@@ -272,6 +401,20 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined, color: AppColors.primary),
+            tooltip: 'Exportar/Imprimir',
+            onPressed: () => _exportar(imprimir: true),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.picture_as_pdf_outlined,
+              color: AppColors.primary,
+            ),
+            tooltip: 'Guardar PDF',
+            onPressed: () => _exportar(imprimir: false),
+          ),
+
           IconButton(
             icon: const Icon(
               Icons.calendar_today_outlined,
@@ -1240,7 +1383,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                     IconButton(
                       icon: const Icon(Icons.arrow_upward, size: 18),
                       tooltip: 'Subir paso',
-                      onPressed: index == 0 ? null : () => _moverPaso(index, -1),
+                      onPressed: index == 0
+                          ? null
+                          : () => _moverPaso(index, -1),
                     ),
                     IconButton(
                       icon: const Icon(Icons.arrow_downward, size: 18),
@@ -1606,10 +1751,7 @@ class _EditarPasoDialogState extends State<_EditarPasoDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: _guardar,
-          child: const Text('Guardar'),
-        ),
+        FilledButton(onPressed: _guardar, child: const Text('Guardar')),
       ],
     );
   }

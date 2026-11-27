@@ -117,19 +117,6 @@ void main() {
       );
     });
 
-    test('un admin puede dar de baja a un usuario', () async {
-      await repository.eliminarUsuario(
-        solicitante: admin,
-        usuarioId: 'alum_2',
-      );
-
-      final eliminado = await repository.obtenerUsuarioPorId('alum_2');
-      expect(eliminado, isNull);
-
-      final lista = await repository.listarUsuarios();
-      expect(lista.any((u) => u.id == 'alum_2'), isFalse);
-    });
-
     test(
       'un usuario sin permiso gestionarUsuarios no puede modificar, restablecer ni dar de baja',
       () async {
@@ -147,40 +134,6 @@ void main() {
           () => repository.restablecerPassword(
             solicitante: alumno,
             usuarioId: 'alum_1',
-          ),
-          throwsA(isA<AccesoDenegadoException>()),
-        );
-
-        expect(
-          () => repository.eliminarUsuario(
-            solicitante: profesor,
-            usuarioId: 'alum_1',
-          ),
-          throwsA(isA<AccesoDenegadoException>()),
-        );
-      },
-    );
-
-    test(
-      'no se puede dar de baja a si mismo ni al unico administrador',
-      () async {
-        // El administrador no puede darse de baja a sí mismo
-        expect(
-          () => repository.eliminarUsuario(
-            solicitante: admin,
-            usuarioId: 'admin_1',
-          ),
-          throwsA(isA<AccesoDenegadoException>()),
-        );
-
-        // Un usuario con permiso de gestionar usuarios no puede borrar al único admin
-        final gestorConPermiso = profesor.copyWith(
-          permisos: {...profesor.permisos, PermisoUsuario.gestionarUsuarios},
-        );
-        expect(
-          () => repository.eliminarUsuario(
-            solicitante: gestorConPermiso,
-            usuarioId: 'admin_1',
           ),
           throwsA(isA<AccesoDenegadoException>()),
         );

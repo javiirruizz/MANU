@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_storage
   flutter_tts
+  printing
   url_launcher_windows
 )
 
