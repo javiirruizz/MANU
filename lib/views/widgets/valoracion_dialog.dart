@@ -1,12 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_theme.dart';
+import '../../core/tamanos.dart';
 import '../../models/mood_option.dart';
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
 
 /// HU 22: panel que se abre al terminar una tarea, con caritas y estrellas.
+/// Al guardar, la tarea queda completada y con su valoración.
 Future<void> mostrarValoracion(
   BuildContext context, {
   required AgendaViewModel vm,
@@ -15,15 +17,52 @@ Future<void> mostrarValoracion(
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ValoracionDialog(vm: vm, tarea: tarea),
+    builder: (_) => _ValoracionDialog(
+      titulo: '¡Tarea terminada!',
+      subtitulo: tarea.nombre,
+      preguntaEmocion: '¿Cómo te has sentido?',
+      preguntaEstrellas: '¿Te ha gustado?',
+      moods: vm.moods,
+      onGuardar: (e, s) => vm.guardarValoracion(tarea.id, e, s),
+    ),
+  );
+}
+
+/// Ventana de satisfacción al pulsar "¡Día completado!".
+Future<void> mostrarValoracionDia(
+  BuildContext context, {
+  required AgendaViewModel vm,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _ValoracionDialog(
+      titulo: '¡Día completado!',
+      subtitulo: '${vm.weekdayName} ${vm.dayNumber} de ${vm.monthName}',
+      preguntaEmocion: '¿Cómo te has sentido hoy?',
+      preguntaEstrellas: '¿Te ha gustado el día?',
+      moods: vm.moods,
+      onGuardar: vm.guardarValoracionDia,
+    ),
   );
 }
 
 class _ValoracionDialog extends StatefulWidget {
-  const _ValoracionDialog({required this.vm, required this.tarea});
+  const _ValoracionDialog({
+    required this.titulo,
+    required this.subtitulo,
+    required this.preguntaEmocion,
+    required this.preguntaEstrellas,
+    required this.moods,
+    required this.onGuardar,
+  });
 
-  final AgendaViewModel vm;
-  final Tarea tarea;
+  final String titulo;
+  final String subtitulo;
+  final String preguntaEmocion;
+  final String preguntaEstrellas;
+  final List<MoodOption> moods;
+  final Future<bool> Function(String emocionId, int estrellas) onGuardar;
 
   @override
   State<_ValoracionDialog> createState() => _ValoracionDialogState();
@@ -37,7 +76,7 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
     final e = _emocion;
     if (e == null) return;
     Navigator.of(context).pop();
-    await widget.vm.guardarValoracion(widget.tarea.id, e, _estrellas);
+    await widget.onGuardar(e, _estrellas);
   }
 
   @override
@@ -45,7 +84,7 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
     final p = context.palette;
     final alto = MediaQuery.sizeOf(context).height;
     final picto = alto < 900 ? 72.0 : 96.0;
-    final moods = widget.vm.moods;
+    final moods = widget.moods;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -58,26 +97,29 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                '¡Tarea terminada!',
+                widget.titulo,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: context.letra(Letra.titulo),
                   fontWeight: FontWeight.w800,
                   color: p.greenDark,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                widget.tarea.nombre,
+                widget.subtitulo,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, color: p.textSoft),
+                style: TextStyle(
+                  fontSize: context.letra(Letra.normal),
+                  color: p.textSoft,
+                ),
               ),
               const SizedBox(height: 18),
               Text(
-                '¿Cómo te has sentido?',
+                widget.preguntaEmocion,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: context.letra(Letra.destacado),
                   fontWeight: FontWeight.w800,
                   color: p.textDark,
                 ),
@@ -99,10 +141,10 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
               ),
               const SizedBox(height: 20),
               Text(
-                '¿Te ha gustado?',
+                widget.preguntaEstrellas,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: context.letra(Letra.destacado),
                   fontWeight: FontWeight.w800,
                   color: p.textDark,
                 ),
@@ -137,9 +179,9 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(64),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Ahora no',
-                        style: TextStyle(fontSize: 20),
+                        style: TextStyle(fontSize: context.letra(Letra.normal)),
                       ),
                     ),
                   ),
@@ -149,10 +191,10 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                     child: FilledButton.icon(
                       onPressed: _emocion == null ? null : _guardar,
                       icon: const Icon(Icons.check, size: 28),
-                      label: const Text(
+                      label: Text(
                         'GUARDAR',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: context.letra(Letra.normal),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -221,7 +263,7 @@ class _Emocion extends StatelessWidget {
                 Text(
                   mood.label,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: context.letra(Letra.detalle),
                     fontWeight: FontWeight.w800,
                     color: p.textDark,
                   ),

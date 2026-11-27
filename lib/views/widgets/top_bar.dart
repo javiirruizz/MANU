@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/app_colors.dart';
 import '../../data/audio_service.dart';
 import '../../data/notificacion_repository.dart';
 import '../../models/notificacion.dart';
@@ -9,9 +8,12 @@ import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'pictograma_imagen.dart';
 import 'avatar_usuario.dart';
+import 'confirmar_salida.dart';
 import 'perfil_dialog.dart';
+import 'selector_tema_widget.dart';
 import '../notificaciones_page.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
+import '../../core/tamanos.dart';
 
 /// Barra superior: logo, pestañas y accesos rápidos.
 class TopBar extends StatelessWidget {
@@ -41,7 +43,7 @@ class TopBar extends StatelessWidget {
         children: [
           Container(
             width: 52,
-            height: 52,
+            height: context.medida(56),
             decoration: BoxDecoration(
               color: context.palette.primary, // Cambio dinámico
               borderRadius: BorderRadius.circular(12),
@@ -53,7 +55,7 @@ class TopBar extends StatelessWidget {
             'Mi Agenda',
             style: TextStyle(
               // Sin const
-              fontSize: 26,
+              fontSize: context.letra(Letra.destacado),
               fontWeight: FontWeight.w800,
               color: context.palette.primary, // Cambio dinámico
             ),
@@ -100,7 +102,7 @@ class TopBar extends StatelessWidget {
                 child: AvatarUsuario(
                   nombre: usuario.nombre,
                   fotoUrl: usuario.fotoUrl,
-                  size: 56,
+                  size: context.medida(56),
                 ),
               ),
             ),
@@ -112,6 +114,7 @@ class TopBar extends StatelessWidget {
             tooltip: 'Ajustes',
             background: context.palette.tabTrack,
             color: context.palette.textDark,
+            onTap: () => mostrarAjustesTema(context),
           ),
           const SizedBox(width: 8),
           _SquareButton(
@@ -120,12 +123,7 @@ class TopBar extends StatelessWidget {
             tooltip: 'Cerrar sesión',
             background: context.palette.tabTrack,
             color: context.palette.textDark,
-            onTap: () {
-              final nav = Navigator.of(context);
-              final authVm = context.read<AuthViewModel>();
-              nav.popUntil((r) => r.isFirst);
-              authVm.cerrarSesion();
-            },
+            onTap: () => confirmarCerrarSesion(context),
           ),
         ],
       ),
@@ -264,54 +262,9 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
           });
         }
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _SquareButton(
-              icon: Icons.notifications_outlined,
-              tooltip: 'Avisos (${noLeidas.length} sin leer)',
-              background: noLeidas.isNotEmpty
-                  ? AppColors.orangeSoft
-                  : context
-                        .palette
-                        .tabTrack, // Cambio dinámico (el naranja lo dejamos fijo porque es de alerta universal)
-              color: noLeidas.isNotEmpty
-                  ? AppColors.orange
-                  : context.palette.textDark, // Cambio dinámico
-              onTap: () {
-                if (noLeidas.isNotEmpty) {
-                  _mostrarAlertaUrgente(noLeidas.first);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No tienes avisos pendientes.'),
-                    ),
-                  );
-                }
-              },
-            ),
-            if (noLeidas.isNotEmpty)
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${noLeidas.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
+        // Solo escucha y lanza la alerta: el icono visible es la campana
+        // de la bandeja (BotonBandeja), así no salen dos símbolos.
+        return const SizedBox.shrink();
       },
     );
   }
@@ -331,7 +284,7 @@ class _TabItem extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: Container(
-        height: 52,
+        height: context.medida(56),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
@@ -339,15 +292,18 @@ class _TabItem extends StatelessWidget {
               : Colors.transparent, // Cambio dinámico
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            // Sin const
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: selected
-                ? Colors.white
-                : context.palette.textDark, // Cambio dinámico
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: context.letra(Letra.detalle),
+              fontWeight: FontWeight.w700,
+              color: selected
+                  ? Colors.white
+                  : context.palette.textDark, // Cambio dinámico
+            ),
           ),
         ),
       ),
@@ -381,9 +337,9 @@ class _SquareButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onTap ?? () {},
           child: SizedBox(
-            width: 56,
-            height: 56,
-            child: Icon(icon, color: color),
+            width: context.medida(56),
+            height: context.medida(56),
+            child: Icon(icon, color: color, size: context.medida(26)),
           ),
         ),
       ),

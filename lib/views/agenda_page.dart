@@ -10,28 +10,18 @@ import '../viewmodels/agenda_view_model.dart';
 import '../viewmodels/auth_view_model.dart';
 import 'widgets/date_bar.dart';
 import 'widgets/menu_section.dart';
-import 'widgets/mood_section.dart';
+import 'widgets/dia_completado_boton.dart';
 import 'widgets/routine_section.dart';
 import 'widgets/top_bar.dart';
-import 'widgets/selector_tema_widget.dart';
 
 /// Pantalla "Día a día" para tablet en horizontal.
-/// El horario ocupa la columna grande; menú y estado de ánimo, la pequeña.
+/// El horario ocupa la columna grande; menú y fin de día, la pequeña.
+/// Todo se ajusta al alto de la pantalla, sin scroll.
 class AgendaPage extends StatelessWidget {
-  const AgendaPage({super.key});
+  const AgendaPage({super.key, this.tareaRepository});
 
-  void _mostrarAjustesTema(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: SelectorTemaWidget(),
-      ),
-    );
-  }
+  /// Solo para pruebas: fuente de tareas alternativa.
+  final TareaRepository? tareaRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +34,12 @@ class AgendaPage extends StatelessWidget {
       create: (ctx) => AgendaViewModel(
         alumnoId: ctx.read<AuthViewModel>().usuario?.id ?? '',
         repository: AgendaRepository(),
-        tareaRepository: TareaRepository(),
+        tareaRepository: tareaRepository ?? TareaRepository(),
         notificaciones: NotificationService(),
       ),
       child: Builder(
         builder: (context) {
           return Scaffold(
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => _mostrarAjustesTema(context),
-              tooltip: 'Personalizar aspecto',
-              child: const Icon(Icons.palette),
-            ),
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -119,14 +104,13 @@ class AgendaPage extends StatelessWidget {
                           SizedBox(width: 12),
                           Expanded(
                             flex: 4,
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  MenuSection(),
-                                  SizedBox(height: 12),
-                                  MoodSection(),
-                                ],
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(child: MenuSection()),
+                                SizedBox(height: 12),
+                                DiaCompletadoBoton(),
+                              ],
                             ),
                           ),
                         ],

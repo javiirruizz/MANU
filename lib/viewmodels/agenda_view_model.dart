@@ -9,7 +9,6 @@ import '../models/meal_item.dart';
 import '../models/mood_option.dart';
 import '../models/tarea.dart';
 import '../models/valoracion.dart';
-import 'package:material_ui/material_ui.dart'; // Para Icons si hiciera falta
 
 enum AgendaPeriod { morning, afternoon }
 
@@ -74,10 +73,10 @@ class AgendaViewModel extends ChangeNotifier {
   final String _reminder;
 
   FiltroTareas _filtro = FiltroTareas.todas;
-  String? _selectedMoodId;
   AgendaPeriod _period = AgendaPeriod.morning;
   bool _dayCompleted = false;
   String? _error;
+  String? _aviso;
 
   // ---- Datos para la vista ----
   List<Tarea> get tasks => List.unmodifiable(_tareas.where(_cumpleFiltro));
@@ -90,7 +89,6 @@ class AgendaViewModel extends ChangeNotifier {
   int get completedCount => _tareas.where(esCompletada).length;
 
   FiltroTareas get filtro => _filtro;
-  String? get selectedMoodId => _selectedMoodId;
   AgendaPeriod get period => _period;
   bool get dayCompleted => _dayCompleted;
 
@@ -198,17 +196,18 @@ class AgendaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleTask(String id) async {
+  /// Devuelve `true` si el cambio se ha guardado en el servidor.
+  Future<bool> toggleTask(String id) async {
     final t = _tareas.where((t) => t.id == id).firstOrNull;
-    if (t == null) return;
-    await marcarTarea(id, !esCompletada(t));
+    if (t == null) return false;
+    return marcarTarea(id, !esCompletada(t));
   }
 
-  Future<void> completarTarea(String id) => marcarTarea(id, true);
+  Future<bool> completarTarea(String id) => marcarTarea(id, true);
 
-  Future<void> marcarTarea(String id, bool completada) async {
+  Future<bool> marcarTarea(String id, bool completada) async {
     final i = _tareas.indexWhere((t) => t.id == id);
-    if (i == -1) return;
+    if (i == -1) return false;
     final original = _tareas[i];
 
     // --- 1. Actualización optimista de la UI ---
@@ -229,27 +228,32 @@ class AgendaViewModel extends ChangeNotifier {
       } else {
         await _tareaRepo.desmarcarCompletada(id, alumnoId);
       }
-      // El stream confirmará el cambio pronto
+      return true; // El stream confirmará el cambio
     } catch (e) {
-      // Rollback visual si la petición falla
+      // Rollback visual si la petición falla, y aviso visible
       debugPrint('Error guardando tarea: $e');
       final j = _tareas.indexWhere((t) => t.id == id);
       if (j != -1) _tareas[j] = original;
-      _error = 'No se pudo guardar el cambio.';
-      notifyListeners();
+      _avisar('No se ha podido guardar la tarea', e);
+      return false;
     }
   }
 
-  /// HU 22: guarda emoción y estrellas de una tarea terminada.
-  Future<void> guardarValoracion(
+  /// HU 22: guarda emoción y estrellas de una tarea terminada
+  /// (y la deja completada en la misma escritura).
+  Future<bool> guardarValoracion(
     String tareaId,
     String emocionId,
     int estrellas,
   ) async {
     final i = _tareas.indexWhere((t) => t.id == tareaId);
-    if (i == -1) return;
+    if (i == -1) return false;
     final original = _tareas[i];
     _tareas[i] = original.copyWith(
+      completadaPor: {
+        ...original.completadaPor,
+        alumnoId: original.completadaPor[alumnoId] ?? DateTime.now(),
+      },
       valoraciones: {
         ...original.valoraciones,
         alumnoId: ValoracionTarea(
@@ -267,32 +271,58 @@ class AgendaViewModel extends ChangeNotifier {
         emocionId: emocionId,
         estrellas: estrellas,
       );
+      return true;
     } catch (e) {
       debugPrint('Error guardando valoración: $e');
       final j = _tareas.indexWhere((t) => t.id == tareaId);
       if (j != -1) _tareas[j] = original;
-      _error = 'No se pudo guardar tu valoración.';
-      notifyListeners();
+      _avisar('No se ha podido guardar cómo te has sentido', e);
+      return false;
     }
+  }
+
+  /// Valoración del día completo (botón "¡Día completado!").
+  Future<bool> guardarValoracionDia(String emocionId, int estrellas) async {
+    try {
+      await _tareaRepo.guardarValoracionDia(
+        alumnoId: alumnoId,
+        dia: _now,
+        emocionId: emocionId,
+        estrellas: estrellas,
+      );
+      _dayCompleted = true;
+      _audioService.reproducirExito();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error guardando valoración del día: $e');
+      _avisar('No se ha podido guardar cómo ha ido el día', e);
+      return false;
+    }
+  }
+
+  /// Mensaje puntual para mostrar en un SnackBar (se consume al leerlo).
+  String? consumirAviso() {
+    final a = _aviso;
+    _aviso = null;
+    return a;
+  }
+
+  void _avisar(String texto, Object e) {
+    // El detalle técnico solo va a la consola; al alumno, un mensaje sencillo
+    debugPrint('$texto: $e');
+    _aviso = '$texto. Inténtalo otra vez.';
+    notifyListeners();
   }
 
   void clearError() {
     _error = null;
-    notifyListeners();
-  }
-
-  void selectMood(String id) {
-    _selectedMoodId = id;
+    _iniciarStream();
     notifyListeners();
   }
 
   void setPeriod(AgendaPeriod period) {
     _period = period;
-    notifyListeners();
-  }
-
-  void completeDay() {
-    _dayCompleted = true;
     notifyListeners();
   }
 

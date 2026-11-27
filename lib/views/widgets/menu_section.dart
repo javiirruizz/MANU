@@ -1,180 +1,116 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_theme.dart'; // Importante
+import '../../core/tamanos.dart';
 import '../../data/menu_repository.dart';
 import '../../models/menu.dart';
 import 'pictograma_imagen.dart';
 import 'section_card.dart';
 
-/// Menú del comedor: tiempo real con Firestore, vista diaria/semanal y pictogramas.
+/// Menú del comedor: tiempo real con Firestore y pictogramas.
+/// El menú de hoy ocupa todo el hueco disponible (sin scroll); el semanal
+/// se abre en una ventana aparte.
 class MenuSection extends StatefulWidget {
-  const MenuSection({super.key, this.comedorId = 'comedor_principal'});
+  const MenuSection({
+    super.key,
+    this.comedorId = 'comedor_principal',
+    this.repository,
+  });
 
   final String comedorId;
+
+  /// Solo para pruebas: fuente de menús alternativa.
+  final MenuRepository? repository;
 
   @override
   State<MenuSection> createState() => _MenuSectionState();
 }
 
 class _MenuSectionState extends State<MenuSection> {
-  final _repo = MenuRepository();
-  bool _verSemana = false;
+  late final _repo = widget.repository ?? MenuRepository();
+  late final Stream<Menu?> _hoy = _repo.watchMenuDeHoy(widget.comedorId);
 
-  static const _nombresDias = [
-    '',
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes',
-    'Sábado',
-    'Domingo',
-  ];
-
-  DateTime get _lunesActual {
-    final hoy = DateTime.now();
-    return DateTime(
-      hoy.year,
-      hoy.month,
-      hoy.day,
-    ).subtract(Duration(days: hoy.weekday - 1));
+  void _verSemana() {
+    showDialog<void>(
+      context: context,
+      builder: (_) =>
+          _MenuSemanaDialog(repo: _repo, comedorId: widget.comedorId),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return SectionCard(
       icon: Icons.restaurant,
-      title: _verSemana ? 'MENÚ SEMANAL' : 'MENÚ',
-      badge: _verSemana ? 'Semana' : 'Hoy',
-      expand: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton.icon(
-                onPressed: () => setState(() => _verSemana = !_verSemana),
-                icon: Icon(
-                  _verSemana ? Icons.today : Icons.calendar_view_week,
-                  size: 18,
-                  color: context.palette.primary, // Cambio dinámico
-                ),
-                label: Text(
-                  _verSemana ? 'Ver hoy' : 'Ver semana',
-                  style: TextStyle(
-                    color: context.palette.primary,
-                  ), // Cambio dinámico
+      title: 'MENÚ',
+      badge: 'Hoy',
+      accion: TextButton.icon(
+        onPressed: _verSemana,
+        icon: Icon(
+          Icons.calendar_view_week,
+          size: context.medida(26),
+          color: p.primary,
+        ),
+        label: Text(
+          'Semana',
+          style: TextStyle(
+            fontSize: context.letra(Letra.detalle),
+            fontWeight: FontWeight.w700,
+            color: p.primary,
+          ),
+        ),
+      ),
+      child: StreamBuilder<Menu?>(
+        stream: _hoy,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final menu = snapshot.data;
+          if (menu == null) {
+            return Center(
+              child: Text(
+                'Hoy no hay menú publicado.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: context.letra(Letra.normal),
+                  color: p.textSoft,
                 ),
               ),
+            );
+          }
+          final items = _platos(menu);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                Expanded(
+                  child: _MealTile(
+                    label: items[i].label,
+                    plato: items[i].plato,
+                    iconoReserva: items[i].icon,
+                  ),
+                ),
+              ],
             ],
-          ),
-          const SizedBox(height: 8),
-          if (!_verSemana)
-            StreamBuilder<Menu?>(
-              stream: _repo.watchMenuDeHoy(widget.comedorId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final menu = snapshot.data;
-                if (menu == null) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'No hay menú publicado para hoy.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: context.palette.textSoft,
-                      ), // Cambio dinámico sin const
-                    ),
-                  );
-                }
-                return _MenuDiaColumn(menu: menu);
-              },
-            )
-          else
-            StreamBuilder<List<Menu>>(
-              stream: _repo.watchMenusSemana(widget.comedorId, _lunesActual),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final menus = snapshot.data ?? [];
-                if (menus.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'No hay menús publicados esta semana.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: context.palette.textSoft,
-                      ), // Cambio dinámico sin const
-                    ),
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final m in menus) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 6),
-                        child: Text(
-                          '${_nombresDias[m.fecha.weekday]} ${m.fecha.day}/${m.fecha.month}',
-                          style: TextStyle(
-                            // Sin const
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: context.palette.primary, // Cambio dinámico
-                          ),
-                        ),
-                      ),
-                      _MenuDiaColumn(menu: m),
-                    ],
-                  ],
-                );
-              },
-            ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class _MenuDiaColumn extends StatelessWidget {
-  const _MenuDiaColumn({required this.menu});
+typedef _Plato = ({String label, PlatoMenu plato, IconData icon});
 
-  final Menu menu;
+List<_Plato> _platos(Menu menu) => [
+  (label: '1º PLATO', plato: menu.primerPlato, icon: Icons.soup_kitchen),
+  (label: '2º PLATO', plato: menu.segundoPlato, icon: Icons.dinner_dining),
+  (label: 'POSTRE', plato: menu.postre, icon: Icons.icecream),
+].where((item) => item.plato.nombre.isNotEmpty).toList();
 
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (label: '1º PLATO', plato: menu.primerPlato, icon: Icons.soup_kitchen),
-      (label: '2º PLATO', plato: menu.segundoPlato, icon: Icons.dinner_dining),
-      (label: 'POSTRE', plato: menu.postre, icon: Icons.icecream),
-    ].where((item) => item.plato.nombre.isNotEmpty).toList();
-
-    return Column(
-      children: [
-        for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
-          _MealTile(
-            label: items[i].label,
-            plato: items[i].plato,
-            iconoReserva: items[i].icon,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
+/// Un plato: pictograma grande y nombre. Se adapta al alto que le toque.
 class _MealTile extends StatelessWidget {
   const _MealTile({
     required this.label,
@@ -188,6 +124,7 @@ class _MealTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final tieneUrlManual =
         plato.pictogramaUrl != null && plato.pictogramaUrl!.isNotEmpty;
 
@@ -195,62 +132,270 @@ class _MealTile extends StatelessWidget {
       label: '$label: ${plato.nombre}',
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: context.palette.cardTint, // Cambio dinámico (antes cardBlue)
+          color: p.cardTint,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: [
-            if (tieneUrlManual)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  plato.pictogramaUrl!,
-                  width: 76,
-                  height: 76,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => PictogramaImagen(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            // El pictograma ocupa el alto de la tarjeta (con un tope)
+            final lado = c.maxHeight.clamp(40.0, context.medida(130));
+            final picto = tieneUrlManual
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      plato.pictogramaUrl!,
+                      width: lado,
+                      height: lado,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => PictogramaImagen(
+                        consulta: plato.nombre,
+                        size: lado,
+                        iconoReserva: iconoReserva,
+                      ),
+                    ),
+                  )
+                : PictogramaImagen(
                     consulta: plato.nombre,
-                    size: 76,
+                    size: lado,
                     iconoReserva: iconoReserva,
-                  ),
-                ),
-              )
-            else
-              PictogramaImagen(
-                consulta: plato.nombre,
-                size: 76,
-                iconoReserva: iconoReserva,
-              ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      // Sin const
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: context.palette.primary, // Cambio dinámico
+                  );
+            return Row(
+              children: [
+                picto,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: (c.maxWidth - lado - 12).clamp(40, 2000),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: context.letra(Letra.detalle),
+                              fontWeight: FontWeight.w800,
+                              color: p.primary,
+                            ),
+                          ),
+                          Text(
+                            plato.nombre,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: context.letra(Letra.normal),
+                              color: p.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Text(
-                    plato.nombre,
-                    style: TextStyle(
-                      // Sin const
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
-                      color: context.palette.textDark, // Añadido color
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Menú de la semana en una ventana: un día por columna.
+class _MenuSemanaDialog extends StatelessWidget {
+  const _MenuSemanaDialog({required this.repo, required this.comedorId});
+
+  final MenuRepository repo;
+  final String comedorId;
+
+  static const _nombresDias = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final hoy = DateTime.now();
+    final lunes = DateTime(hoy.year, hoy.month, hoy.day - (hoy.weekday - 1));
+    final tam = MediaQuery.sizeOf(context);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: SizedBox(
+        width: tam.width * 0.9,
+        height: tam.height * 0.85,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.restaurant,
+                    color: p.primary,
+                    size: context.medida(34),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Menú de la semana',
+                      style: TextStyle(
+                        fontSize: context.letra(Letra.destacado),
+                        fontWeight: FontWeight.w800,
+                        color: p.textDark,
+                      ),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                    label: Text(
+                      'Cerrar',
+                      style: TextStyle(fontSize: context.letra(Letra.normal)),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Expanded(
+                child: StreamBuilder<List<Menu>>(
+                  stream: repo.watchMenusSemana(comedorId, lunes),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final porDia = {
+                      for (final m in snapshot.data ?? const <Menu>[])
+                        m.fecha.weekday: m,
+                    };
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var d = 1; d <= 5; d++) ...[
+                          if (d > 1) const SizedBox(width: 10),
+                          Expanded(
+                            child: _DiaSemana(
+                              titulo:
+                                  '${_nombresDias[d - 1]} ${lunes.add(Duration(days: d - 1)).day}',
+                              esHoy: d == hoy.weekday,
+                              menu: porDia[d],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _DiaSemana extends StatelessWidget {
+  const _DiaSemana({
+    required this.titulo,
+    required this.esHoy,
+    required this.menu,
+  });
+
+  final String titulo;
+  final bool esHoy;
+  final Menu? menu;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final m = menu;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: esHoy ? p.cardTint : p.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: esHoy ? p.primary : p.divider,
+          width: esHoy ? 3 : 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: context.letra(Letra.normal),
+              fontWeight: FontWeight.w800,
+              color: p.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (m == null)
+            Expanded(
+              child: Center(
+                child: Text(
+                  'Sin menú',
+                  style: TextStyle(
+                    fontSize: context.letra(Letra.detalle),
+                    color: p.textSoft,
+                  ),
+                ),
+              ),
+            )
+          else
+            for (final item in _platos(m))
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: LayoutBuilder(
+                    builder: (context, c) {
+                      final lado =
+                          (c.maxHeight - context.letra(Letra.detalle) * 2.6)
+                              .clamp(24.0, context.medida(110));
+                      return Column(
+                        children: [
+                          PictogramaImagen(
+                            consulta: item.plato.nombre,
+                            size: lado,
+                            iconoReserva: item.icon,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.plato.nombre,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: context.letra(Letra.detalle),
+                              fontWeight: FontWeight.w700,
+                              color: p.textDark,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+        ],
       ),
     );
   }

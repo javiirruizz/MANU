@@ -1,19 +1,23 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_theme.dart'; // Importante
+import '../../core/tamanos.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
 
-/// "Hoy es..." con día, fecha y estación, cada uno con su pictograma.
+/// "Hoy es..." con día, fecha y estación, cada uno con su pictograma,
+/// y los botones de mañana/tarde y escuchar.
 class DateBar extends StatelessWidget {
   const DateBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
+    final picto = context.medida(60);
+    final altoBoton = context.medida(64);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: context.palette.surface, // Cambio dinámico
         borderRadius: BorderRadius.circular(18),
@@ -21,14 +25,15 @@ class DateBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
               child: Row(
                 children: [
                   _Bloque(
-                    picto: const PictogramaImagen(
+                    picto: PictogramaImagen(
                       consulta: 'semana',
-                      size: 64,
+                      size: picto,
                       iconoReserva: Icons.view_week_outlined,
                     ),
                     titulo: vm.weekdayName,
@@ -36,19 +41,19 @@ class DateBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   _Bloque(
-                    picto: const PictogramaImagen(
+                    picto: PictogramaImagen(
                       consulta: 'calendario',
-                      size: 64,
+                      size: picto,
                       iconoReserva: Icons.calendar_month,
                     ),
-                    titulo: '${vm.dayNumber} de${vm.monthName}',
+                    titulo: '${vm.dayNumber} de ${vm.monthName}',
                     detalle: '${vm.year}',
                   ),
                   const SizedBox(width: 12),
                   _Bloque(
                     picto: PictogramaImagen(
                       consulta: vm.season.toLowerCase(),
-                      size: 64,
+                      size: picto,
                       iconoReserva: Icons.filter_drama_outlined,
                     ),
                     titulo: vm.season,
@@ -85,18 +90,21 @@ class DateBar extends StatelessWidget {
           const SizedBox(width: 12),
           FilledButton.icon(
             onPressed: vm.readAloud,
-            icon: const Icon(Icons.volume_up_outlined, size: 28),
-            label: const Text(
+            icon: Icon(Icons.volume_up_outlined, size: context.medida(30)),
+            label: Text(
               'Escuchar',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: context.letra(Letra.normal),
+              ),
             ),
             style: FilledButton.styleFrom(
               backgroundColor: context
                   .palette
                   .green, // Cambio dinámico (el verde que defina el tema)
               foregroundColor: context.palette.surface, // Cambio dinámico
-              minimumSize: const Size(0, 64),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              minimumSize: Size(0, altoBoton),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -141,14 +149,14 @@ class _Bloque extends StatelessWidget {
                 style: TextStyle(
                   // Sin const
                   fontWeight: FontWeight.w800,
-                  fontSize: 24,
+                  fontSize: context.letra(Letra.destacado),
                   color: context.palette.textDark, // Añadido color dinámico
                 ),
               ),
               Text(
                 detalle,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: context.letra(Letra.detalle),
                   color: context.palette.textSoft,
                 ), // Cambio dinámico sin const
               ),
@@ -193,16 +201,16 @@ class _PeriodButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, size: 24, color: color),
+                Icon(icon, size: context.medida(26), color: color),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 18,
+                    fontSize: context.letra(Letra.normal),
                     color: color,
                   ),
                 ),

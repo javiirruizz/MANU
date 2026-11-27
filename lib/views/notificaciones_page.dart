@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/app_theme.dart';
+import '../core/tamanos.dart';
 import '../data/audio_service.dart';
 import '../data/notificacion_repository.dart';
 import '../data/usuario_repository.dart';
@@ -37,8 +38,8 @@ class BotonBandeja extends StatelessWidget {
                 ),
               ),
               child: SizedBox(
-                width: 56,
-                height: 56,
+                width: context.medida(56),
+                height: context.medida(56),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -151,8 +152,11 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.mark_email_read_outlined,
-                        size: 80, color: p.textSoft),
+                    Icon(
+                      Icons.mark_email_read_outlined,
+                      size: 80,
+                      color: p.textSoft,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'No tienes avisos.',
@@ -363,8 +367,9 @@ class _DetalleAviso extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => AudioService()
-                          .leerTexto('${noti.titulo}. ${noti.mensaje}'),
+                      onPressed: () => AudioService().leerTexto(
+                        '${noti.titulo}. ${noti.mensaje}',
+                      ),
                       icon: const Icon(Icons.volume_up_outlined, size: 28),
                       label: const Text(
                         'Escuchar',

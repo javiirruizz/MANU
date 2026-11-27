@@ -131,9 +131,14 @@ class Tarea {
         const [];
 
     final completadaPor = <String, DateTime>{};
-    (m['completadaPor'] as Map<String, dynamic>? ?? {}).forEach((alumnoId, v) {
-      completadaPor[alumnoId] = v is Timestamp ? v.toDate() : DateTime.now();
-    });
+    final rawCompletada = m['completadaPor'];
+    if (rawCompletada is Map) {
+      rawCompletada.forEach((alumnoId, v) {
+        completadaPor[alumnoId.toString()] = v is Timestamp
+            ? v.toDate()
+            : DateTime.now();
+      });
+    }
 
     return Tarea(
       id: id,
