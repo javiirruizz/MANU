@@ -6,27 +6,18 @@ import '../../data/notificacion_repository.dart';
 import '../../models/notificacion.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
+import 'menu_perfil.dart';
 import 'pictograma_imagen.dart';
-import 'avatar_usuario.dart';
-import 'confirmar_salida.dart';
-import 'perfil_dialog.dart';
-import 'selector_tema_widget.dart';
-import '../notificaciones_page.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
 import '../../core/tamanos.dart';
 
-/// Barra superior: logo, pestañas y accesos rápidos.
+/// Barra superior: logo, pestañas y el botón de "Mi espacio" (perfil).
 class TopBar extends StatelessWidget {
   const TopBar({super.key, this.selectedIndex = 0});
 
   final int selectedIndex;
 
-  static const _tabs = [
-    'Día a día',
-    'Mes y festivos',
-    'Fin de semana',
-    'Mis datos',
-  ];
+  static const _tabs = ['Día a día', 'Mes y festivos', 'Fin de semana'];
 
   @override
   Widget build(BuildContext context) {
@@ -86,45 +77,12 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 20),
 
           // Receptor en tiempo real de notificaciones push para el alumno (HU 35)
-          if (usuario != null && usuario.rol == RolUsuario.alumno) ...[
+          if (usuario != null && usuario.rol == RolUsuario.alumno)
             _ReceptorNotificaciones(alumnoId: usuario.id),
-            const SizedBox(width: 8),
-            BotonBandeja(alumno: usuario),
-            const SizedBox(width: 8),
-          ],
 
-          if (usuario != null) ...[
-            Tooltip(
-              message: 'Mi perfil',
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => mostrarPerfil(context),
-                child: AvatarUsuario(
-                  nombre: usuario.nombre,
-                  fotoUrl: usuario.fotoUrl,
-                  size: context.medida(56),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          _SquareButton(
-            // Sin const para permitir acceso al context internamente
-            icon: Icons.settings_outlined,
-            tooltip: 'Ajustes',
-            background: context.palette.tabTrack,
-            color: context.palette.textDark,
-            onTap: () => mostrarAjustesTema(context),
-          ),
-          const SizedBox(width: 8),
-          _SquareButton(
-            // Sin const
-            icon: Icons.logout,
-            tooltip: 'Cerrar sesión',
-            background: context.palette.tabTrack,
-            color: context.palette.textDark,
-            onTap: () => confirmarCerrarSesion(context),
-          ),
+          // Un único botón: avatar y nombre. Dentro están el avatar, los
+          // avisos, los colores, mis datos y salir.
+          if (usuario != null) BotonPerfil(usuario: usuario),
         ],
       ),
     );
@@ -263,7 +221,7 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
         }
 
         // Solo escucha y lanza la alerta: el icono visible es la campana
-        // de la bandeja (BotonBandeja), así no salen dos símbolos.
+        // del botón de perfil (BotonPerfil), con su globito de avisos.
         return const SizedBox.shrink();
       },
     );
@@ -304,42 +262,6 @@ class _TabItem extends StatelessWidget {
                   ? Colors.white
                   : context.palette.textDark, // Cambio dinámico
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SquareButton extends StatelessWidget {
-  const _SquareButton({
-    required this.icon,
-    required this.tooltip,
-    this.background = Colors.transparent, // Se asigna desde fuera si hace falta
-    this.color = Colors.black, // Se asigna desde fuera
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final Color background;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: background,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap ?? () {},
-          child: SizedBox(
-            width: context.medida(56),
-            height: context.medida(56),
-            child: Icon(icon, color: color, size: context.medida(26)),
           ),
         ),
       ),

@@ -10,6 +10,8 @@ import '../../models/paso.dart';
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'barra_progreso_pausable.dart';
+import 'dia_completado_boton.dart';
+import 'menu_section.dart';
 import 'pictograma_imagen.dart';
 import 'reproductor_audio.dart';
 import 'reproductor_video.dart';
@@ -27,13 +29,6 @@ class RoutineSection extends StatefulWidget {
 
 class _RoutineSectionState extends State<RoutineSection> {
   static const _separacion = 12.0;
-
-  static const _etiquetas = {
-    FiltroTareas.todas: 'Todas',
-    FiltroTareas.actuales: 'Actuales',
-    FiltroTareas.pendientes: 'Pendientes',
-    FiltroTareas.completadas: 'Completadas',
-  };
 
   static const _vacios = {
     FiltroTareas.todas: 'Hoy no tienes tareas.',
@@ -93,61 +88,61 @@ class _RoutineSectionState extends State<RoutineSection> {
         children: [
           Row(
             children: [
-              Icon(Icons.schedule, color: p.primary, size: context.medida(36)),
-              const SizedBox(width: 10),
-              Text(
-                'Mi horario',
-                style: TextStyle(
-                  fontSize: context.letra(Letra.destacado),
-                  fontWeight: FontWeight.w800,
-                  color: p.textDark,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
+              Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Row(
                     children: [
-                      for (final f in FiltroTareas.values) ...[
-                        ChoiceChip(
-                          label: Text(_etiquetas[f]!),
-                          labelStyle: TextStyle(
-                            fontSize: context.letra(Letra.detalle),
-                            fontWeight: FontWeight.w700,
-                            color: vm.filtro == f ? Colors.white : p.textDark,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                          selected: vm.filtro == f,
-                          selectedColor: p.primary,
-                          showCheckmark: false,
-                          onSelected: (_) => vm.setFiltro(f),
+                      Icon(
+                        Icons.schedule,
+                        color: p.primary,
+                        size: context.medida(36),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Mi horario',
+                        style: TextStyle(
+                          fontSize: context.letra(Letra.destacado),
+                          fontWeight: FontWeight.w800,
+                          color: p.textDark,
                         ),
-                        const SizedBox(width: 8),
-                      ],
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: p.badge,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${vm.completedCount} de ${vm.totalCount} hechas',
+                          style: TextStyle(
+                            fontSize: context.letra(Letra.normal),
+                            fontWeight: FontWeight.w800,
+                            color: p.primary,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: p.badge,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${vm.completedCount}/${vm.totalCount}',
-                  style: TextStyle(
-                    fontSize: context.letra(Letra.normal),
-                    fontWeight: FontWeight.w800,
-                    color: p.primary,
+              const SizedBox(width: 16),
+              // Si no cabe todo, los botones se encogen un poco (sin desbordar)
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    children: const [
+                      BotonMenuComedor(),
+                      SizedBox(width: 12),
+                      DiaCompletadoBoton(),
+                    ],
                   ),
                 ),
               ),
