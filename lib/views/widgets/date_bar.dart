@@ -5,8 +5,8 @@ import '../../core/tamanos.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
 
-/// "Hoy es..." con día, fecha y estación, cada uno con su pictograma,
-/// y los botones de mañana/tarde y escuchar.
+/// La fecha de hoy en un solo recuadro con su pictograma
+/// y los botones de mañana y tarde.
 class DateBar extends StatelessWidget {
   const DateBar({super.key});
 
@@ -14,7 +14,6 @@ class DateBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
     final picto = context.medida(60);
-    final altoBoton = context.medida(64);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -24,46 +23,23 @@ class DateBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
+          // Un único recuadro con la fecha de hoy
+          Flexible(
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Row(
-                children: [
-                  _Bloque(
-                    picto: PictogramaImagen(
-                      consulta: 'semana',
-                      size: picto,
-                      iconoReserva: Icons.view_week_outlined,
-                    ),
-                    titulo: vm.weekdayName,
-                    detalle: vm.dayNote,
-                  ),
-                  const SizedBox(width: 12),
-                  _Bloque(
-                    picto: PictogramaImagen(
-                      consulta: 'calendario',
-                      size: picto,
-                      iconoReserva: Icons.calendar_month,
-                    ),
-                    titulo: '${vm.dayNumber} de ${vm.monthName}',
-                    detalle: '${vm.year}',
-                  ),
-                  const SizedBox(width: 12),
-                  _Bloque(
-                    picto: PictogramaImagen(
-                      consulta: vm.season.toLowerCase(),
-                      size: picto,
-                      iconoReserva: Icons.filter_drama_outlined,
-                    ),
-                    titulo: vm.season,
-                    detalle: 'Estación',
-                  ),
-                ],
+              child: _Bloque(
+                picto: PictogramaImagen(
+                  consulta: 'calendario',
+                  size: picto,
+                  iconoReserva: Icons.calendar_month,
+                ),
+                titulo:
+                    '${vm.weekdayName} ${vm.dayNumber} de ${vm.monthName.toLowerCase()}',
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const Spacer(),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -87,29 +63,6 @@ class DateBar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          FilledButton.icon(
-            onPressed: vm.readAloud,
-            icon: Icon(Icons.volume_up_outlined, size: context.medida(30)),
-            label: Text(
-              'Escuchar',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: context.letra(Letra.normal),
-              ),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: context
-                  .palette
-                  .green, // Cambio dinámico (el verde que defina el tema)
-              foregroundColor: context.palette.surface, // Cambio dinámico
-              minimumSize: Size(0, altoBoton),
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -117,52 +70,34 @@ class DateBar extends StatelessWidget {
 }
 
 class _Bloque extends StatelessWidget {
-  const _Bloque({
-    required this.picto,
-    required this.titulo,
-    required this.detalle,
-  });
+  const _Bloque({required this.picto, required this.titulo});
 
   final Widget picto;
   final String titulo;
-  final String detalle;
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 20, 8),
       decoration: BoxDecoration(
-        color: context.palette.chip, // Cambio dinámico
+        // En los temas de varios colores lleva el primer color pastel
+        color: p.acentos.isEmpty ? p.chip : p.acento(0),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           picto,
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                titulo,
-                style: TextStyle(
-                  // Sin const
-                  fontWeight: FontWeight.w800,
-                  fontSize: context.letra(Letra.destacado),
-                  color: context.palette.textDark, // Añadido color dinámico
-                ),
-              ),
-              Text(
-                detalle,
-                style: TextStyle(
-                  fontSize: context.letra(Letra.detalle),
-                  color: context.palette.textSoft,
-                ), // Cambio dinámico sin const
-              ),
-            ],
+          const SizedBox(width: 14),
+          Text(
+            titulo,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: context.letra(Letra.destacado),
+              color: p.textDark,
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
     );

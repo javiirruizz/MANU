@@ -401,55 +401,6 @@ class _DiaSemana extends StatelessWidget {
   }
 }
 
-/// Botón con dibujo para ver qué hay de comer hoy (abre el menú en una ventana).
-class BotonMenuComedor extends StatelessWidget {
-  const BotonMenuComedor({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    final alto = context.medida(60);
-    return Semantics(
-      button: true,
-      label: 'Ver el menú del comedor',
-      excludeSemantics: true,
-      child: Material(
-        color: const Color(0xFFFFE9C7), // tono cálido, fácil de reconocer
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => mostrarMenuComedor(context),
-          child: SizedBox(
-            height: alto,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PictogramaImagen(
-                    consulta: 'comer',
-                    size: alto - 14,
-                    iconoReserva: Icons.restaurant,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Menú del comedor',
-                    style: TextStyle(
-                      fontSize: context.letra(Letra.normal),
-                      fontWeight: FontWeight.w800,
-                      color: p.textDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Ventana con el menú de hoy (y desde ahí, el de la semana).
 Future<void> mostrarMenuComedor(BuildContext context) {
   final tam = MediaQuery.sizeOf(context);

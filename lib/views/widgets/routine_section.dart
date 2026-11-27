@@ -8,9 +8,11 @@ import '../../core/app_theme.dart'; // Importante: extensión del tema
 import '../../core/tamanos.dart';
 import '../../models/paso.dart';
 import '../../models/tarea.dart';
+import '../../models/usuario.dart';
 import '../../viewmodels/agenda_view_model.dart';
-import 'barra_progreso_pausable.dart';
-import 'dia_completado_boton.dart';
+import '../../viewmodels/auth_view_model.dart';
+import 'barra_progreso_tarea.dart';
+import 'crear_tarea_dialog.dart';
 import 'menu_section.dart';
 import 'pictograma_imagen.dart';
 import 'reproductor_audio.dart';
@@ -18,8 +20,11 @@ import 'reproductor_video.dart';
 import 'valoracion_dialog.dart';
 
 /// Horario del día: es la parte principal de la pantalla.
-/// Las tareas se ven por "diapositivas" (dos por página si caben) y se pasa
-/// de una a otra con los botones < > o deslizando el dedo.
+///
+/// Las tareas van una al lado de otra (3 o 4 por página, según el ancho) y
+/// se pasa de página con < >, con los puntos o deslizando el dedo. Abajo está
+/// el botón de escuchar. A la derecha, en pequeño: nueva tarea (si el
+/// profesor lo permite), menú del comedor y fin del día.
 class RoutineSection extends StatefulWidget {
   const RoutineSection({super.key});
 
@@ -42,8 +47,8 @@ class _RoutineSectionState extends State<RoutineSection> {
   /// Filtro para el que ya se ha saltado a la página de la tarea actual.
   FiltroTareas? _filtroColocado;
 
-  /// Al abrir la agenda (o cambiar de filtro) se va a la página de la tarea
-  /// que toca ahora; después el alumno pasa las páginas a su ritmo.
+  /// Al abrir la agenda se va a la página de la tarea que toca ahora;
+  /// después el alumno pasa las páginas a su ritmo.
   void _colocar(List<Tarea> tareas, AgendaViewModel vm, int porPagina) {
     if (_filtroColocado == vm.filtro || tareas.isEmpty) return;
     _filtroColocado = vm.filtro;
@@ -57,6 +62,7 @@ class _RoutineSectionState extends State<RoutineSection> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
+    final usuario = context.watch<AuthViewModel>().usuario;
     final p = context.palette;
 
     // Si algo no se ha podido guardar, se avisa (antes fallaba en silencio)
@@ -77,81 +83,66 @@ class _RoutineSectionState extends State<RoutineSection> {
       });
     }
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    // El profesor decide si el alumno puede crear sus propias tareas
+    final puedeCrear =
+        usuario != null &&
+        usuario.rol == RolUsuario.alumno &&
+        usuario.tienePermiso(PermisoUsuario.crearTareasPropias);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: _contenido(vm, context),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: context.medida(190),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            // Los tres botones se reparten todo el alto
             children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.schedule,
-                        color: p.primary,
-                        size: context.medida(36),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Mi horario',
-                        style: TextStyle(
-                          fontSize: context.letra(Letra.destacado),
-                          fontWeight: FontWeight.w800,
-                          color: p.textDark,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: p.badge,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${vm.completedCount} de ${vm.totalCount} hechas',
-                          style: TextStyle(
-                            fontSize: context.letra(Letra.normal),
-                            fontWeight: FontWeight.w800,
-                            color: p.primary,
-                          ),
-                        ),
-                      ),
-                    ],
+              if (puedeCrear) ...[
+                Expanded(
+                  child: _BotonLateral(
+                    icono: Icons.add_rounded,
+                    texto: 'Nueva tarea',
+                    fondo: p.badge,
+                    onTap: () => mostrarCrearTarea(context, alumno: usuario),
                   ),
                 ),
+                const SizedBox(height: 12),
+              ],
+              Expanded(
+                child: _BotonLateral(
+                  icono: Icons.restaurant,
+                  pictograma: 'comedor',
+                  texto: 'Menú del comedor',
+                  fondo: const Color(0xFFFFE9C7), // tono cálido
+                  onTap: () => mostrarMenuComedor(context),
+                ),
               ),
-              const SizedBox(width: 16),
-              // Si no cabe todo, los botones se encogen un poco (sin desbordar)
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    children: const [
-                      BotonMenuComedor(),
-                      SizedBox(width: 12),
-                      DiaCompletadoBoton(),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _BotonLateral(
+                  icono: Icons.check_rounded,
+                  texto: 'Día completado',
+                  fondo: vm.dayCompleted ? p.greenSoft : p.cardTint,
+                  colorIcono: p.green, // tick verde
+                  onTap: () => mostrarValoracionDia(context, vm: vm),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(child: _contenido(vm, context)),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -198,12 +189,14 @@ class _RoutineSectionState extends State<RoutineSection> {
 
     return LayoutBuilder(
       builder: (context, c) {
-        // Dos tareas por página si caben con un alto cómodo; si no, una.
-        final altoMinimo = context.medida(170);
-        final altoNavegacion = context.medida(56);
-        final altoTareas = c.maxHeight - altoNavegacion - 10;
-        final porPagina = altoTareas >= altoMinimo * 2 + _separacion ? 2 : 1;
+        // Tantas tarjetas por página como quepan con un ancho cómodo (3 o 4)
+        final anchoMinimo = context.medida(260);
+        final porPagina =
+            ((c.maxWidth + _separacion) / (anchoMinimo + _separacion))
+                .floor()
+                .clamp(1, 4);
         final paginas = (tareas.length / porPagina).ceil();
+        final altoNavegacion = context.medida(60);
 
         _colocar(tareas, vm, porPagina);
         final pagina = _pagina.clamp(0, paginas - 1);
@@ -223,18 +216,14 @@ class _RoutineSectionState extends State<RoutineSection> {
           child: Column(
             children: [
               Expanded(
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (var i = 0; i < porPagina; i++) ...[
-                      if (i > 0) const SizedBox(height: _separacion),
+                      if (i > 0) const SizedBox(width: _separacion),
                       Expanded(
-                        // La tarea con barra de progreso o pasos, algo más alta
-                        flex:
-                            i < visibles.length && _tieneExtras(vm, visibles[i])
-                            ? 4
-                            : 3,
                         child: i < visibles.length
-                            ? _tarjeta(vm, visibles[i])
+                            ? _tarjeta(vm, visibles[i], inicio + i)
                             : const SizedBox.shrink(),
                       ),
                     ],
@@ -242,7 +231,7 @@ class _RoutineSectionState extends State<RoutineSection> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Navegación abajo: < puntos >
+              // Abajo: <  puntos · hechas · escuchar  >
               SizedBox(
                 height: altoNavegacion,
                 child: Row(
@@ -254,10 +243,31 @@ class _RoutineSectionState extends State<RoutineSection> {
                       onTap: pagina > 0 ? () => _irA(pagina - 1) : null,
                     ),
                     Expanded(
-                      child: _Puntos(
-                        total: paginas,
-                        actual: pagina,
-                        onTap: _irA,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: _Puntos(
+                              total: paginas,
+                              actual: pagina,
+                              onTap: _irA,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            '${vm.completedCount} de ${vm.totalCount} hechas',
+                            style: TextStyle(
+                              fontSize: context.letra(Letra.detalle),
+                              fontWeight: FontWeight.w700,
+                              color: p.textSoft,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          _BotonEscuchar(
+                            onTap: () =>
+                                vm.readAloud(_textoParaLeer(vm, visibles)),
+                          ),
+                        ],
                       ),
                     ),
                     _Flecha(
@@ -277,36 +287,147 @@ class _RoutineSectionState extends State<RoutineSection> {
     );
   }
 
-  /// Si la tarjeta muestra algo además de la fila principal.
-  static bool _tieneExtras(AgendaViewModel vm, Tarea t) {
-    bool lleno(String? s) => s != null && s.isNotEmpty;
-    final barra = vm.esActual(t) && !vm.esCompletada(t);
-    final pasos =
-        t.pasos.isNotEmpty &&
-        !(t.creadaPor == 'ejemplo' &&
-            t.pasos.length == 1 &&
-            t.pasos.first.descripcion == t.nombre);
-    return barra ||
-        pasos ||
-        lleno(t.audioUrl) ||
-        lleno(t.videoUrl) ||
-        lleno(t.enlaceWeb);
+  /// Lee en voz alta las tareas que se ven ahora en pantalla.
+  static String _textoParaLeer(AgendaViewModel vm, List<Tarea> visibles) {
+    String hora(DateTime d) =>
+        '${d.hour}${d.minute == 0 ? '' : ' y ${d.minute}'}';
+    final partes = [
+      for (final t in visibles)
+        '${t.nombre}, de ${hora(t.horaInicio)} a ${hora(t.horaFinal)}'
+            '${vm.esCompletada(t) ? ', ya está hecha' : ''}'
+            '${vm.esActual(t) ? ', es la tarea de ahora' : ''}.',
+    ];
+    final quedan = vm.totalCount - vm.completedCount;
+    return '${partes.join(' ')} Te quedan $quedan tareas por hacer hoy.';
   }
 
-  Widget _tarjeta(AgendaViewModel vm, Tarea t) {
+  Widget _tarjeta(AgendaViewModel vm, Tarea t, int indice) {
     return _TareaCard(
       key: ValueKey(t.id),
       tarea: t,
+      indice: indice,
       actual: vm.esActual(t),
       completada: vm.esCompletada(t),
-      onToggle: () async {
-        final yaHecha = vm.esCompletada(t);
-        final ok = await vm.toggleTask(t.id);
-        // HU 22: al terminar la tarea se abre el panel de emoción
-        if (ok && !yaHecha && mounted) {
-          mostrarValoracion(context, vm: vm, tarea: t);
-        }
-      },
+      onToggle: () => vm.toggleTask(t.id),
+    );
+  }
+}
+
+/// Botón pequeño de la columna derecha: dibujo arriba y texto debajo.
+class _BotonLateral extends StatelessWidget {
+  const _BotonLateral({
+    required this.icono,
+    this.pictograma,
+    required this.texto,
+    required this.fondo,
+    required this.onTap,
+    this.colorIcono,
+  });
+
+  final IconData icono; // símbolo, o reserva del pictograma
+  final String? pictograma; // palabra que se busca en ARASAAC
+  final String texto;
+  final Color fondo;
+  final Color? colorIcono;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      button: true,
+      label: texto,
+      excludeSemantics: true,
+      child: Material(
+        color: fondo,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: SizedBox(
+            height: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Pictograma de ARASAAC o, si no hay, un símbolo sencillo
+                  // (un "+" o un tick) dentro de un círculo de color.
+                  if (pictograma != null)
+                    PictogramaImagen(
+                      consulta: pictograma,
+                      size: context.medida(64),
+                      iconoReserva: icono,
+                    )
+                  else
+                    Container(
+                      width: context.medida(64),
+                      height: context.medida(64),
+                      decoration: BoxDecoration(
+                        color: colorIcono ?? p.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icono,
+                        color: Colors.white,
+                        size: context.medida(46),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    texto,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: context.letra(Letra.detalle),
+                      fontWeight: FontWeight.w800,
+                      color: p.textDark,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Altavoz para escuchar las tareas que se ven en pantalla.
+class _BotonEscuchar extends StatelessWidget {
+  const _BotonEscuchar({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      button: true,
+      label: 'Escuchar mis tareas',
+      excludeSemantics: true,
+      child: Tooltip(
+        message: 'Escuchar',
+        child: Material(
+          color: p.green,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              width: context.medida(58),
+              height: context.medida(58),
+              child: Icon(
+                Icons.volume_up_rounded,
+                color: Colors.white,
+                size: context.medida(34),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -348,7 +469,6 @@ class _Flecha extends StatelessWidget {
   }
 }
 
-/// Puntitos que indican en qué página estamos (se pueden pulsar).
 class _Puntos extends StatelessWidget {
   const _Puntos({
     required this.total,
@@ -386,16 +506,21 @@ class _Puntos extends StatelessWidget {
   }
 }
 
+/// Una tarea en vertical: dibujo arriba, hora y nombre en el centro y el
+/// botón de "hecha" abajo. En los temas de varios colores cada tarjeta lleva
+/// un color pastel distinto.
 class _TareaCard extends StatelessWidget {
   const _TareaCard({
     super.key,
     required this.tarea,
+    required this.indice,
     required this.actual,
     required this.completada,
     required this.onToggle,
   });
 
   final Tarea tarea;
+  final int indice;
   final bool actual;
   final bool completada;
   final VoidCallback onToggle;
@@ -460,184 +585,230 @@ class _TareaCard extends StatelessWidget {
     final tieneEnlace = tarea.enlaceWeb != null && tarea.enlaceWeb!.isNotEmpty;
     final pasosOrdenados = List.of(tarea.pasos)
       ..sort((a, b) => a.orden.compareTo(b.orden));
+    // Un único paso igual al nombre es solo el pictograma de la tarea
     final mostrarPasos =
         pasosOrdenados.isNotEmpty &&
-        !(tarea.creadaPor == 'ejemplo' &&
-            pasosOrdenados.length == 1 &&
+        !(pasosOrdenados.length == 1 &&
             pasosOrdenados.first.descripcion == tarea.nombre);
-    final mostrarBarra = actual && !completada;
-    final hayExtras =
-        mostrarPasos || tieneAudio || tieneVideo || tieneEnlace || mostrarBarra;
+    final hayExtras = mostrarPasos || tieneAudio || tieneVideo || tieneEnlace;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: actual
-            ? p.cardTint
-            : completada
-            ? p.background
-            : p.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: actual ? p.primary : p.divider,
-          width: actual ? 4 : 1.5,
+    final fondo = completada
+        ? p.background
+        : (p.acentos.isNotEmpty ? p.acento(indice) : p.surface);
+
+    return Opacity(
+      opacity: completada ? 0.75 : 1,
+      child: Container(
+        // El borde de la tarea de ahora es más grueso: se resta del relleno
+        // para que el contenido quede en el mismo sitio que en las demás
+        padding: EdgeInsets.all(actual ? 12 - 2.5 : 12),
+        decoration: BoxDecoration(
+          color: actual && p.acentos.isEmpty ? p.cardTint : fondo,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: actual ? p.primary : p.divider,
+            width: actual ? 4 : 1.5,
+          ),
         ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          // La fila principal ocupa toda la tarjeta, o la mitad si hay extras
-          // Con extras (barra de progreso, pasos...) se les reserva lo justo
-          final altoFila = hayExtras
-              ? math.max(c.maxHeight * 0.55, c.maxHeight - context.medida(84))
-              : c.maxHeight;
-          final picto = math.min(altoFila, context.medida(130));
-          final check = math.min(altoFila, context.medida(96));
+        child: LayoutBuilder(
+          builder: (context, c) {
+            // El dibujo crece con la tarjeta, dejando sitio a lo demás
+            final picto = math.min(
+              c.maxWidth * 0.62,
+              // Mismo tamaño en todas las tarjetas: el dibujo no salta de
+              // sitio ni cambia de tamaño entre la tarea de ahora y las demás
+              c.maxHeight * 0.23,
+            );
+            final altoBoton = context.medida(58);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: altoFila,
-                child: Row(
-                  children: [
-                    PictogramaImagen(
-                      url: url,
-                      id: tarea.pictogramaId,
-                      consulta: tarea.nombre,
-                      size: picto,
-                      iconoReserva: Icons.event_note_outlined,
-                      opacidad: completada ? 0.5 : 1,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, cc) => FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: SizedBox(
-                            width: cc.maxWidth,
-                            child: _textos(context),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Semantics(
-                      button: true,
-                      label: completada
-                          ? 'Marcar como pendiente'
-                          : 'Marcar como hecha',
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: onToggle,
-                        child: Container(
-                          width: check,
-                          height: check,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: completada ? p.green : p.checkEmpty,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            color: completada ? Colors.white : p.surface,
-                            size: check * 0.62,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (hayExtras) ...[
-                const SizedBox(height: 8),
-                // Solo si una tarea trae mucho contenido extra hace falta
-                // desplazar dentro de su tarjeta.
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (mostrarBarra) BarraProgresoPausable(tarea: tarea),
-                        if (mostrarPasos) _pasos(context, pasosOrdenados),
-                        if (tieneAudio) ...[
-                          const SizedBox(height: 8),
-                          ReproductorAudioWidget(url: tarea.audioUrl!),
-                        ],
-                        if (tieneVideo || tieneEnlace) ...[
-                          const SizedBox(height: 8),
-                          _botonesMultimedia(context, tieneVideo, tieneEnlace),
-                        ],
-                      ],
-                    ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: PictogramaImagen(
+                    url: url,
+                    id: tarea.pictogramaId,
+                    consulta: tarea.nombre,
+                    size: picto,
+                    iconoReserva: Icons.event_note_outlined,
+                    opacidad: completada ? 0.5 : 1,
                   ),
                 ),
+                const SizedBox(height: 8),
+                // Si el texto no cabe en el alto de la pantalla, se encoge un
+                // poco en lugar de desbordarse (nunca crece).
+                Expanded(
+                  child: hayExtras
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Flexible(child: _textosAjustados(context, c)),
+                            const SizedBox(height: 8),
+                            // Solo si una tarea trae mucho contenido extra
+                            // hace falta desplazar dentro de su tarjeta.
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (mostrarPasos)
+                                      _pasos(context, pasosOrdenados),
+                                    if (tieneAudio) ...[
+                                      const SizedBox(height: 8),
+                                      ReproductorAudioWidget(
+                                        url: tarea.audioUrl!,
+                                      ),
+                                    ],
+                                    if (tieneVideo || tieneEnlace) ...[
+                                      const SizedBox(height: 8),
+                                      _botonesMultimedia(
+                                        context,
+                                        tieneVideo,
+                                        tieneEnlace,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Align(
+                          alignment: Alignment.topCenter,
+                          child: _textosAjustados(context, c),
+                        ),
+                ),
+                const SizedBox(height: 8),
+                _botonHecha(context, altoBoton),
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _textos(BuildContext context) {
+  Widget _botonHecha(BuildContext context, double alto) {
     final p = context.palette;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
-              style: TextStyle(
-                fontSize: context.letra(Letra.normal),
-                fontWeight: FontWeight.w800,
-                color: p.primary,
-              ),
+    return Semantics(
+      button: true,
+      label: completada ? 'Marcar como pendiente' : 'Marcar como hecha',
+      excludeSemantics: true,
+      child: Material(
+        color: completada ? p.green : p.checkEmpty,
+        borderRadius: BorderRadius.circular(alto),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(alto),
+          onTap: onToggle,
+          child: SizedBox(
+            height: alto,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_rounded,
+                  size: alto * 0.7,
+                  color: completada ? Colors.white : p.surface,
+                ),
+              ],
             ),
-            if (actual) ...[
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: p.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  'AHORA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: context.letra(Letra.detalle),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        Text(
-          tarea.nombre,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: context.letra(Letra.titulo),
-            fontWeight: FontWeight.w800,
-            color: completada ? p.textSoft : p.textDark,
           ),
         ),
-        if (tarea.descripcion.isNotEmpty)
+      ),
+    );
+  }
+
+  /// [_textos] con el ancho de la tarjeta, encogido solo si no cabe.
+  Widget _textosAjustados(BuildContext context, BoxConstraints c) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.topCenter,
+    child: SizedBox(width: c.maxWidth, child: _textos(context)),
+  );
+
+  /// Debajo del dibujo: nombre, descripción y la hora. En la tarea de ahora,
+  /// la hora, el tiempo que queda y la barra van juntos en un recuadro.
+  Widget _textos(BuildContext context) {
+    final p = context.palette;
+    final hora = Text(
+      '${_hora(tarea.horaInicio)} - ${_hora(tarea.horaFinal)}',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: context.letra(Letra.detalle),
+        fontWeight: FontWeight.w800,
+        color: p.primary,
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          tarea.nombre,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: context.letra(Letra.destacado),
+            fontWeight: FontWeight.w800,
+            color: completada ? p.textSoft : p.textDark,
+            height: 1.1,
+          ),
+        ),
+        if (tarea.descripcion.isNotEmpty) ...[
+          const SizedBox(height: 4),
           Text(
             tarea.descripcion,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: context.letra(Letra.detalle),
               color: p.textSoft,
             ),
           ),
+        ],
+        const SizedBox(height: 8),
+        if (actual && !completada)
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: p.badge,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // La hora y, debajo, "AHORA"
+                hora,
+                const SizedBox(height: 4),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: p.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'AHORA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: context.letra(Letra.detalle) * 0.72,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                BarraProgresoTarea(tarea: tarea),
+              ],
+            ),
+          )
+        else
+          hora,
       ],
     );
   }
@@ -648,41 +819,44 @@ class _TareaCard extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: p.background,
+        color: p.surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: p.divider),
       ),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final paso in pasos)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: context.medida(15),
-                  backgroundColor: p.primary,
-                  child: Text(
-                    '${paso.orden}',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: context.letra(Letra.detalle) * 0.8,
-                      fontWeight: FontWeight.w800,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: context.medida(13),
+                    backgroundColor: p.primary,
+                    child: Text(
+                      '${paso.orden}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: context.letra(Letra.detalle) * 0.75,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  paso.descripcion,
-                  style: TextStyle(
-                    fontSize: context.letra(Letra.detalle),
-                    fontWeight: FontWeight.w600,
-                    color: completada ? p.textSoft : p.textDark,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      paso.descripcion,
+                      style: TextStyle(
+                        fontSize: context.letra(Letra.detalle) * 0.9,
+                        fontWeight: FontWeight.w600,
+                        color: completada ? p.textSoft : p.textDark,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
         ],
       ),
@@ -695,34 +869,26 @@ class _TareaCard extends StatelessWidget {
     bool tieneEnlace,
   ) {
     final p = context.palette;
-    final estilo = TextStyle(
-      fontSize: context.letra(Letra.detalle),
-      fontWeight: FontWeight.w700,
-    );
     return Wrap(
-      spacing: 12,
+      alignment: WrapAlignment.center,
+      spacing: 10,
       runSpacing: 8,
       children: [
         if (tieneVideo)
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: p.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
+          IconButton.filled(
+            tooltip: 'Ver vídeo',
+            style: IconButton.styleFrom(backgroundColor: p.primary),
+            iconSize: context.medida(30),
             onPressed: () => _mostrarVideo(context, tarea.videoUrl!),
-            icon: Icon(Icons.play_circle_fill, size: context.medida(28)),
-            label: Text('Ver vídeo', style: estilo),
+            icon: const Icon(Icons.play_circle_fill),
           ),
         if (tieneEnlace)
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: p.primary,
-              side: BorderSide(color: p.primary, width: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
+          IconButton.outlined(
+            tooltip: 'Abrir enlace',
+            iconSize: context.medida(28),
+            color: p.primary,
             onPressed: () => _abrirEnlace(context, tarea.enlaceWeb!),
-            icon: Icon(Icons.open_in_new, size: context.medida(26)),
-            label: Text('Abrir enlace', style: estilo),
+            icon: const Icon(Icons.open_in_new),
           ),
       ],
     );

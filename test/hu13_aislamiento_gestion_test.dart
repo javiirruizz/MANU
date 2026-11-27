@@ -99,7 +99,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Mi Agenda'), findsOneWidget);
-        expect(find.text('Mi horario'), findsOneWidget);
+        expect(find.text('Hoy'), findsOneWidget);
         expect(find.text('Menú del comedor'), findsOneWidget);
 
         // Ninguna acción de gestión debe aparecer en la agenda del alumno

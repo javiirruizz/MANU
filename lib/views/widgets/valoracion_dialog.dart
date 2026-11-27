@@ -3,32 +3,11 @@ import 'package:material_ui/material_ui.dart';
 import '../../core/app_theme.dart';
 import '../../core/tamanos.dart';
 import '../../models/mood_option.dart';
-import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
 
-/// HU 22: panel que se abre al terminar una tarea, con caritas y estrellas.
-/// Al guardar, la tarea queda completada y con su valoración.
-Future<void> mostrarValoracion(
-  BuildContext context, {
-  required AgendaViewModel vm,
-  required Tarea tarea,
-}) {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => _ValoracionDialog(
-      titulo: '¡Tarea terminada!',
-      subtitulo: tarea.nombre,
-      preguntaEmocion: '¿Cómo te has sentido?',
-      preguntaEstrellas: '¿Te ha gustado?',
-      moods: vm.moods,
-      onGuardar: (e, s) => vm.guardarValoracion(tarea.id, e, s),
-    ),
-  );
-}
-
-/// Ventana de satisfacción al pulsar "¡Día completado!".
+/// Ventana de satisfacción al pulsar "¡Día completado!" (caritas y estrellas).
+/// Es la única valoración que hace el alumno: ya no se pregunta tarea a tarea.
 Future<void> mostrarValoracionDia(
   BuildContext context, {
   required AgendaViewModel vm,

@@ -1,12 +1,14 @@
 import 'package:material_ui/material_ui.dart';
-import 'app_colors.dart';
 
-/// Temas de color disponibles para el alumno
+/// Temas de color disponibles para el alumno (todos en tonos pastel)
 enum TemaColor {
-  azul('Azul (Por defecto)'),
+  azul('Azul'),
   verde('Verde calma'),
   morado('Morado sereno'),
-  calido('Cálido suave');
+  calido('Cálido suave'),
+  arcoiris('Arcoíris'),
+  atardecer('Atardecer'),
+  oceano('Océano');
 
   final String nombre;
   const TemaColor(this.nombre);
@@ -42,6 +44,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color borderColor;
   final double borderWidth;
 
+  /// Colores pastel para dar un color distinto a cada tarjeta (temas de
+  /// varios colores, como Arcoíris). Vacío = todas con [cardTint].
+  final List<Color> acentos;
+
+  /// Color de fondo para la tarjeta número [i].
+  Color acento(int i) =>
+      acentos.isEmpty ? cardTint : acentos[i % acentos.length];
+
   const AppPalette({
     required this.background,
     required this.surface,
@@ -64,101 +74,206 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.amber,
     this.borderColor = Colors.transparent,
     this.borderWidth = 0.0,
+    this.acentos = const [],
   });
 
-  // 1. TEMA AZUL (Paleta original de AppColors)
+  // Todas las paletas son de tonos pastel: fondos suaves y un color
+  // principal de intensidad media, con contraste suficiente para el texto
+  // grande en blanco de los botones.
+
+  // 1. TEMA AZUL (por defecto)
   static const azul = AppPalette(
-    background: AppColors.background,
-    surface: AppColors.surface,
-    primary: AppColors.primary,
-    cardTint: AppColors.cardBlue,
-    chip: AppColors.chip,
-    tabTrack: AppColors.tabTrack,
-    badge: AppColors.badge,
-    checkEmpty: AppColors.checkEmpty,
-    divider: AppColors.divider,
-    textDark: AppColors.textDark,
-    textSoft: AppColors.textSoft,
-    green: AppColors.green,
-    greenLight: AppColors.greenLight,
-    greenDark: AppColors.greenDark,
-    greenSoft: AppColors.greenSoft,
-    selectedBg: AppColors.selectedBg,
-    orange: AppColors.orange,
-    orangeSoft: AppColors.orangeSoft,
-    amber: AppColors.amber,
+    background: Color(0xFFF7FAFE),
+    surface: Colors.white,
+    primary: Color(0xFF5B97D1),
+    cardTint: Color(0xFFEAF3FC),
+    chip: Color(0xFFF1F7FD),
+    tabTrack: Color(0xFFEEF5FC),
+    badge: Color(0xFFE2EEFA),
+    checkEmpty: Color(0xFFE1ECF6),
+    divider: Color(0xFFE8EFF6),
+    textDark: Color(0xFF243140),
+    textSoft: Color(0xFF56677A),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFEEF9F1),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
   );
 
-  // 2. TEMA VERDE (Naturaleza / Calma)
+  // 2. TEMA VERDE (calma)
   static const verde = AppPalette(
-    background: Color(0xFFF2F7F4),
+    background: Color(0xFFF6FBF8),
     surface: Colors.white,
-    primary: Color(0xFF1B6E3A),
-    cardTint: Color(0xFFDFEFE5),
-    chip: Color(0xFFEAF3ED),
-    tabTrack: Color(0xFFE3EFE8),
-    badge: Color(0xFFCDE5D6),
-    checkEmpty: Color(0xFFC5DFCE),
-    divider: Color(0xFFDCE8E0),
-    textDark: Color(0xFF16291E),
-    textSoft: Color(0xFF435B4D),
-    green: AppColors.green,
-    greenLight: AppColors.greenLight,
-    greenDark: AppColors.greenDark,
-    greenSoft: AppColors.greenSoft,
-    selectedBg: Color(0xFFD9F2E1),
-    orange: AppColors.orange,
-    orangeSoft: AppColors.orangeSoft,
-    amber: AppColors.amber,
+    primary: Color(0xFF4E9E74),
+    cardTint: Color(0xFFE8F6EE),
+    chip: Color(0xFFF0F9F3),
+    tabTrack: Color(0xFFECF7F0),
+    badge: Color(0xFFDFF1E6),
+    checkEmpty: Color(0xFFDCEEE3),
+    divider: Color(0xFFE6F2EA),
+    textDark: Color(0xFF213429),
+    textSoft: Color(0xFF52695B),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFE6F6EB),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
   );
 
-  // 3. TEMA MORADO (Lavanda / Sereno)
+  // 3. TEMA MORADO (lavanda)
   static const morado = AppPalette(
-    background: Color(0xFFF5F3F8),
+    background: Color(0xFFFAF8FD),
     surface: Colors.white,
-    primary: Color(0xFF5B359C),
-    cardTint: Color(0xFFE8E1F5),
-    chip: Color(0xFFF0ECF7),
-    tabTrack: Color(0xFFE9E4F3),
-    badge: Color(0xFFDAD0EE),
-    checkEmpty: Color(0xFFD2C7E8),
-    divider: Color(0xFFE3DDF0),
-    textDark: Color(0xFF211833),
-    textSoft: Color(0xFF524766),
-    green: AppColors.green,
-    greenLight: AppColors.greenLight,
-    greenDark: AppColors.greenDark,
-    greenSoft: AppColors.greenSoft,
-    selectedBg: Color(0xFFEDE7F8),
-    orange: AppColors.orange,
-    orangeSoft: AppColors.orangeSoft,
-    amber: AppColors.amber,
+    primary: Color(0xFF9078C8),
+    cardTint: Color(0xFFF1EBFA),
+    chip: Color(0xFFF6F2FC),
+    tabTrack: Color(0xFFF3EEFA),
+    badge: Color(0xFFEAE2F8),
+    checkEmpty: Color(0xFFE6DEF4),
+    divider: Color(0xFFEEE8F7),
+    textDark: Color(0xFF2C223E),
+    textSoft: Color(0xFF5F5473),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFF4EFFB),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
   );
 
-  // 4. TEMA CÁLIDO (Crema suave / Reduce fatiga de luz azul)
+  // 4. TEMA CÁLIDO (crema y melocotón)
   static const calido = AppPalette(
-    background: Color(0xFFF8F5F0),
-    surface: Color(0xFFFFFDF9),
-    primary: Color(0xFFA84A10),
-    cardTint: Color(0xFFF3E6D8),
-    chip: Color(0xFFF5EDE3),
-    tabTrack: Color(0xFFEFE5D9),
-    badge: Color(0xFFEBD7C3),
-    checkEmpty: Color(0xFFE3CCB5),
-    divider: Color(0xFFE8DDD0),
-    textDark: Color(0xFF2E2118),
-    textSoft: Color(0xFF614E40),
-    green: AppColors.green,
-    greenLight: AppColors.greenLight,
-    greenDark: AppColors.greenDark,
-    greenSoft: AppColors.greenSoft,
-    selectedBg: Color(0xFFF5E6D3),
-    orange: Color(0xFFD46A1E),
-    orangeSoft: AppColors.orangeSoft,
-    amber: AppColors.amber,
+    background: Color(0xFFFEFAF5),
+    surface: Colors.white,
+    primary: Color(0xFFCC8156),
+    cardTint: Color(0xFFFBEFE4),
+    chip: Color(0xFFFCF5EE),
+    tabTrack: Color(0xFFFAF1E8),
+    badge: Color(0xFFF7E7D9),
+    checkEmpty: Color(0xFFF3E3D4),
+    divider: Color(0xFFF5EBE1),
+    textDark: Color(0xFF38291F),
+    textSoft: Color(0xFF6B584A),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFFBF1E7),
+    orange: Color(0xFFE0955F),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
   );
 
-  // 5. MODO ALTO CONTRASTE (Máxima legibilidad WCAG AAA)
+  // 5. ARCOÍRIS: cada tarjeta de un color pastel distinto
+  static const arcoiris = AppPalette(
+    background: Color(0xFFFEFCF9),
+    surface: Colors.white,
+    primary: Color(0xFF9486D3),
+    cardTint: Color(0xFFF3F0FC),
+    chip: Color(0xFFF8F6FD),
+    tabTrack: Color(0xFFF5F2FB),
+    badge: Color(0xFFEEE9FA),
+    checkEmpty: Color(0xFFE7E3F3),
+    divider: Color(0xFFEFECF5),
+    textDark: Color(0xFF2B283D),
+    textSoft: Color(0xFF5E5975),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFF5F2FC),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
+    acentos: [
+      Color(0xFFFFEBF0), // rosa
+      Color(0xFFFFF1E2), // melocotón
+      Color(0xFFFFF9DC), // amarillo
+      Color(0xFFE8F8EF), // menta
+      Color(0xFFE7F3FD), // cielo
+      Color(0xFFF2ECFB), // lila
+    ],
+  );
+
+  // 6. ATARDECER: rosas, melocotón y lila
+  static const atardecer = AppPalette(
+    background: Color(0xFFFEFAF9),
+    surface: Colors.white,
+    primary: Color(0xFFD07A8F),
+    cardTint: Color(0xFFFCEEF1),
+    chip: Color(0xFFFDF5F6),
+    tabTrack: Color(0xFFFCF1F3),
+    badge: Color(0xFFFAE6EA),
+    checkEmpty: Color(0xFFF5E2E6),
+    divider: Color(0xFFF7ECEE),
+    textDark: Color(0xFF3A2830),
+    textSoft: Color(0xFF6F5660),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFFDF3F5),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
+    acentos: [
+      Color(0xFFFFEBEF), // rosa
+      Color(0xFFFFF0E6), // melocotón
+      Color(0xFFFFF7E3), // vainilla
+      Color(0xFFF8EDF8), // lila
+    ],
+  );
+
+  // 7. OCÉANO: aguamarina, azul y menta
+  static const oceano = AppPalette(
+    background: Color(0xFFF6FBFC),
+    surface: Colors.white,
+    primary: Color(0xFF4A9DAE),
+    cardTint: Color(0xFFE7F5F7),
+    chip: Color(0xFFF0F9FA),
+    tabTrack: Color(0xFFEBF6F8),
+    badge: Color(0xFFDFF1F4),
+    checkEmpty: Color(0xFFDCEDF0),
+    divider: Color(0xFFE5F1F3),
+    textDark: Color(0xFF1F3338),
+    textSoft: Color(0xFF4E666C),
+    green: Color(0xFF5DBB7E),
+    greenLight: Color(0xFFCDEFD8),
+    greenDark: Color(0xFF37875A),
+    greenSoft: Color(0xFFEAF8EE),
+    selectedBg: Color(0xFFEAF8F6),
+    orange: Color(0xFFE8A06A),
+    orangeSoft: Color(0xFFFEF1E6),
+    amber: Color(0xFFF6CF5A),
+    acentos: [
+      Color(0xFFE4F7F9), // aguamarina
+      Color(0xFFE7F1FD), // azul cielo
+      Color(0xFFE9F8F0), // menta
+      Color(0xFFEEEEFC), // lavanda
+    ],
+  );
+
+  /// Paleta de cada tema.
+  static AppPalette paraTema(TemaColor tema) => switch (tema) {
+    TemaColor.azul => azul,
+    TemaColor.verde => verde,
+    TemaColor.morado => morado,
+    TemaColor.calido => calido,
+    TemaColor.arcoiris => arcoiris,
+    TemaColor.atardecer => atardecer,
+    TemaColor.oceano => oceano,
+  };
+
+  // MODO ALTO CONTRASTE (Máxima legibilidad WCAG AAA)
   static const altoContraste = AppPalette(
     background: Color(0xFFFFFFFF),
     surface: Color(0xFFFFFFFF),
@@ -206,6 +321,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? amber,
     Color? borderColor,
     double? borderWidth,
+    List<Color>? acentos,
   }) {
     return AppPalette(
       background: background ?? this.background,
@@ -229,6 +345,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       amber: amber ?? this.amber,
       borderColor: borderColor ?? this.borderColor,
       borderWidth: borderWidth ?? this.borderWidth,
+      acentos: acentos ?? this.acentos,
     );
   }
 
@@ -257,6 +374,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       amber: Color.lerp(amber, other.amber, t)!,
       borderColor: Color.lerp(borderColor, other.borderColor, t)!,
       borderWidth: t < 0.5 ? borderWidth : other.borderWidth,
+      acentos: t < 0.5 ? acentos : other.acentos,
     );
   }
 }
@@ -274,12 +392,7 @@ class AppTheme {
   }) {
     final AppPalette palette = altoContraste
         ? AppPalette.altoContraste
-        : switch (tema) {
-            TemaColor.azul => AppPalette.azul,
-            TemaColor.verde => AppPalette.verde,
-            TemaColor.morado => AppPalette.morado,
-            TemaColor.calido => AppPalette.calido,
-          };
+        : AppPalette.paraTema(tema);
 
     final colorScheme = ColorScheme.light(
       primary: palette.primary,

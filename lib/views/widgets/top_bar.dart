@@ -17,7 +17,7 @@ class TopBar extends StatelessWidget {
 
   final int selectedIndex;
 
-  static const _tabs = ['Día a día', 'Mes y festivos', 'Fin de semana'];
+  static const _tabs = ['Hoy', 'Mes y festivos', 'Fin de semana'];
 
   @override
   Widget build(BuildContext context) {
@@ -32,16 +32,7 @@ class TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 52,
-            height: context.medida(56),
-            decoration: BoxDecoration(
-              color: context.palette.primary, // Cambio dinámico
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.menu_book_outlined, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 6),
           Text(
             'Mi Agenda',
             style: TextStyle(

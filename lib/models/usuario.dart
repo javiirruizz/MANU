@@ -49,6 +49,11 @@ enum PermisoUsuario {
     nombre: 'Progreso y cierre de tareas',
     descripcion: 'Marcar tareas y pasos completados y registrar emociones.',
   ),
+  crearTareasPropias(
+    nombre: 'Crear mis propias tareas',
+    descripcion:
+        'El alumno puede añadir tareas sencillas a su agenda. El profesor puede quitarlo.',
+  ),
   gestionarTiempoLibre(
     nombre: 'Mi tiempo libre',
     descripcion:
@@ -87,6 +92,7 @@ enum PermisoUsuario {
         return {
           PermisoUsuario.marcarTareas,
           PermisoUsuario.gestionarTiempoLibre,
+          PermisoUsuario.crearTareasPropias,
         };
     }
   }
@@ -215,6 +221,14 @@ class Usuario {
           .whereType<PermisoUsuario>()
           .toSet();
     }
+    // Las listas guardadas antes de existir "Crear mis propias tareas" no lo
+    // incluyen: a los alumnos se les da por defecto. Si después el profesor
+    // lo quita, se guarda con la versión nueva y se respeta.
+    if (permisos != null &&
+        rol == RolUsuario.alumno &&
+        ((m['permisosVersion'] as num?) ?? 1) < 2) {
+      permisos = {...permisos, PermisoUsuario.crearTareasPropias};
+    }
 
     return Usuario(
       id: id,
@@ -249,6 +263,7 @@ class Usuario {
     'rol': rol.name,
     'estado': estado.name,
     'permisos': permisos.map((p) => p.name).toList(),
+    'permisosVersion': 2,
     'email': email,
     'puedeEditarPerfil': puedeEditarPerfil,
     'preferenciaVisualizacion': preferenciaVisualizacion,
