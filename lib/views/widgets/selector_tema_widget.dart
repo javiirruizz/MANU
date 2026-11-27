@@ -4,6 +4,21 @@ import 'package:provider/provider.dart';
 import '../../core/app_theme.dart';
 import '../../viewmodels/theme_view_model.dart';
 
+/// Ajustes de aspecto (colores y contraste) en un panel inferior.
+/// Se abre desde el botón de Ajustes de la barra superior.
+Future<void> mostrarAjustesTema(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: SelectorTemaWidget(),
+    ),
+  );
+}
+
 class SelectorTemaWidget extends StatelessWidget {
   const SelectorTemaWidget({super.key});
 

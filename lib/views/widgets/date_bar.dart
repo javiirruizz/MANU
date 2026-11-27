@@ -4,25 +4,11 @@ import '../../core/app_theme.dart'; // Importante
 import '../../core/tamanos.dart';
 import '../../viewmodels/agenda_view_model.dart';
 import 'pictograma_imagen.dart';
-import 'selector_tema_widget.dart';
 
 /// "Hoy es..." con día, fecha y estación, cada uno con su pictograma,
-/// y los botones de mañana/tarde, escuchar y personalizar aspecto.
+/// y los botones de mañana/tarde y escuchar.
 class DateBar extends StatelessWidget {
   const DateBar({super.key});
-
-  void _mostrarAjustesTema(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: SelectorTemaWidget(),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,27 +107,6 @@ class DateBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 22),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Tooltip(
-            message: 'Personalizar aspecto',
-            child: Material(
-              color: context.palette.tabTrack,
-              borderRadius: BorderRadius.circular(14),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => _mostrarAjustesTema(context),
-                child: SizedBox(
-                  width: altoBoton,
-                  height: altoBoton,
-                  child: Icon(
-                    Icons.palette,
-                    size: context.medida(32),
-                    color: context.palette.primary,
-                  ),
-                ),
               ),
             ),
           ),

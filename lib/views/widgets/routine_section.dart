@@ -205,7 +205,8 @@ class _RoutineSectionState extends State<RoutineSection> {
       builder: (context, c) {
         // Dos tareas por página si caben con un alto cómodo; si no, una.
         final altoMinimo = context.medida(170);
-        final altoTareas = c.maxHeight - context.medida(40);
+        final altoNavegacion = context.medida(56);
+        final altoTareas = c.maxHeight - altoNavegacion - 10;
         final porPagina = altoTareas >= altoMinimo * 2 + _separacion ? 2 : 1;
         final paginas = (tareas.length / porPagina).ceil();
 
@@ -227,6 +228,28 @@ class _RoutineSectionState extends State<RoutineSection> {
           child: Column(
             children: [
               Expanded(
+                child: Column(
+                  children: [
+                    for (var i = 0; i < porPagina; i++) ...[
+                      if (i > 0) const SizedBox(height: _separacion),
+                      Expanded(
+                        // La tarea con barra de progreso o pasos, algo más alta
+                        flex:
+                            i < visibles.length && _tieneExtras(vm, visibles[i])
+                            ? 4
+                            : 3,
+                        child: i < visibles.length
+                            ? _tarjeta(vm, visibles[i])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Navegación abajo: < puntos >
+              SizedBox(
+                height: altoNavegacion,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -235,22 +258,13 @@ class _RoutineSectionState extends State<RoutineSection> {
                       etiqueta: 'Tareas anteriores',
                       onTap: pagina > 0 ? () => _irA(pagina - 1) : null,
                     ),
-                    const SizedBox(width: 10),
                     Expanded(
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < porPagina; i++) ...[
-                            if (i > 0) const SizedBox(height: _separacion),
-                            Expanded(
-                              child: i < visibles.length
-                                  ? _tarjeta(vm, visibles[i])
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
-                        ],
+                      child: _Puntos(
+                        total: paginas,
+                        actual: pagina,
+                        onTap: _irA,
                       ),
                     ),
-                    const SizedBox(width: 10),
                     _Flecha(
                       icono: Icons.chevron_right,
                       etiqueta: 'Tareas siguientes',
@@ -261,15 +275,27 @@ class _RoutineSectionState extends State<RoutineSection> {
                   ],
                 ),
               ),
-              SizedBox(
-                height: context.medida(40),
-                child: _Puntos(total: paginas, actual: pagina, onTap: _irA),
-              ),
             ],
           ),
         );
       },
     );
+  }
+
+  /// Si la tarjeta muestra algo además de la fila principal.
+  static bool _tieneExtras(AgendaViewModel vm, Tarea t) {
+    bool lleno(String? s) => s != null && s.isNotEmpty;
+    final barra = vm.esActual(t) && !vm.esCompletada(t);
+    final pasos =
+        t.pasos.isNotEmpty &&
+        !(t.creadaPor == 'ejemplo' &&
+            t.pasos.length == 1 &&
+            t.pasos.first.descripcion == t.nombre);
+    return barra ||
+        pasos ||
+        lleno(t.audioUrl) ||
+        lleno(t.videoUrl) ||
+        lleno(t.enlaceWeb);
   }
 
   Widget _tarjeta(AgendaViewModel vm, Tarea t) {
@@ -290,7 +316,7 @@ class _RoutineSectionState extends State<RoutineSection> {
   }
 }
 
-/// Botón grande < o > para pasar de página.
+/// Botón < o > para pasar de página (abajo, junto a los puntos).
 class _Flecha extends StatelessWidget {
   const _Flecha({required this.icono, required this.etiqueta, this.onTap});
 
@@ -308,17 +334,17 @@ class _Flecha extends StatelessWidget {
       label: etiqueta,
       excludeSemantics: true,
       child: Material(
-        color: activa ? p.primary : p.tabTrack,
-        borderRadius: BorderRadius.circular(18),
+        color: p.tabTrack,
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: SizedBox(
-            width: context.medida(68),
+            width: context.medida(110),
             child: Icon(
               icono,
-              size: context.medida(56),
-              color: activa ? Colors.white : p.textSoft.withValues(alpha: 0.5),
+              size: context.medida(48),
+              color: activa ? p.primary : p.textSoft.withValues(alpha: 0.35),
             ),
           ),
         ),
@@ -465,8 +491,9 @@ class _TareaCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, c) {
           // La fila principal ocupa toda la tarjeta, o la mitad si hay extras
+          // Con extras (barra de progreso, pasos...) se les reserva lo justo
           final altoFila = hayExtras
-              ? (c.maxHeight * 0.55).clamp(56.0, context.medida(130))
+              ? math.max(c.maxHeight * 0.55, c.maxHeight - context.medida(84))
               : c.maxHeight;
           final picto = math.min(altoFila, context.medida(130));
           final check = math.min(altoFila, context.medida(96));

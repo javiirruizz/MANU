@@ -10,6 +10,7 @@ import 'pictograma_imagen.dart';
 import 'avatar_usuario.dart';
 import 'confirmar_salida.dart';
 import 'perfil_dialog.dart';
+import 'selector_tema_widget.dart';
 import '../notificaciones_page.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
 import '../../core/tamanos.dart';
@@ -113,6 +114,7 @@ class TopBar extends StatelessWidget {
             tooltip: 'Ajustes',
             background: context.palette.tabTrack,
             color: context.palette.textDark,
+            onTap: () => mostrarAjustesTema(context),
           ),
           const SizedBox(width: 8),
           _SquareButton(
