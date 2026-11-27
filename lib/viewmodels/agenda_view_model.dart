@@ -9,7 +9,6 @@ import '../models/meal_item.dart';
 import '../models/mood_option.dart';
 import '../models/tarea.dart';
 import '../models/valoracion.dart';
-import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 
 enum AgendaPeriod { morning, afternoon }
 
@@ -310,13 +309,9 @@ class AgendaViewModel extends ChangeNotifier {
   }
 
   void _avisar(String texto, Object e) {
-    final codigo = e is FirebaseException ? e.code : null;
-    _aviso = switch (codigo) {
-      'permission-denied' =>
-        '$texto: Firebase no da permiso al alumno (revisa las reglas de Firestore).',
-      null => '$texto. Inténtalo otra vez.',
-      _ => '$texto ($codigo). Inténtalo otra vez.',
-    };
+    // El detalle técnico solo va a la consola; al alumno, un mensaje sencillo
+    debugPrint('$texto: $e');
+    _aviso = '$texto. Inténtalo otra vez.';
     notifyListeners();
   }
 

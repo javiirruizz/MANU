@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_theme.dart';
+import '../../core/tamanos.dart';
 import '../../models/mood_option.dart';
 import '../../models/tarea.dart';
 import '../../viewmodels/agenda_view_model.dart';
@@ -99,7 +100,7 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                 widget.titulo,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: context.letra(Letra.titulo),
                   fontWeight: FontWeight.w800,
                   color: p.greenDark,
                 ),
@@ -108,14 +109,17 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
               Text(
                 widget.subtitulo,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, color: p.textSoft),
+                style: TextStyle(
+                  fontSize: context.letra(Letra.normal),
+                  color: p.textSoft,
+                ),
               ),
               const SizedBox(height: 18),
               Text(
                 widget.preguntaEmocion,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: context.letra(Letra.destacado),
                   fontWeight: FontWeight.w800,
                   color: p.textDark,
                 ),
@@ -140,7 +144,7 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                 widget.preguntaEstrellas,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: context.letra(Letra.destacado),
                   fontWeight: FontWeight.w800,
                   color: p.textDark,
                 ),
@@ -175,9 +179,9 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(64),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Ahora no',
-                        style: TextStyle(fontSize: 20),
+                        style: TextStyle(fontSize: context.letra(Letra.normal)),
                       ),
                     ),
                   ),
@@ -187,10 +191,10 @@ class _ValoracionDialogState extends State<_ValoracionDialog> {
                     child: FilledButton.icon(
                       onPressed: _emocion == null ? null : _guardar,
                       icon: const Icon(Icons.check, size: 28),
-                      label: const Text(
+                      label: Text(
                         'GUARDAR',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: context.letra(Letra.normal),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -259,7 +263,7 @@ class _Emocion extends StatelessWidget {
                 Text(
                   mood.label,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: context.letra(Letra.detalle),
                     fontWeight: FontWeight.w800,
                     color: p.textDark,
                   ),

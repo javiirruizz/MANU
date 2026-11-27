@@ -1,9 +1,12 @@
 import 'package:material_ui/material_ui.dart';
-import '../../core/app_colors.dart';
 
-/// Tarjeta blanca con cabecera (icono, título y etiqueta opcional).
+import '../../core/app_theme.dart';
+import '../../core/tamanos.dart';
+
+/// Tarjeta con cabecera (icono, título y etiqueta opcional).
 /// Con [expand] = true (por defecto) el [child] ocupa todo el espacio restante;
 /// con false, la tarjeta solo ocupa lo que necesita su contenido.
+/// [accion] es un widget opcional a la derecha de la cabecera.
 class SectionCard extends StatelessWidget {
   const SectionCard({
     super.key,
@@ -11,21 +14,24 @@ class SectionCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.badge,
+    this.accion,
     this.expand = true,
   });
 
   final IconData icon;
   final String title;
   final String? badge;
+  final Widget? accion;
   final Widget child;
   final bool expand;
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: p.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -34,42 +40,47 @@ class SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.primary, size: 24),
+              Icon(icon, color: p.primary, size: context.medida(30)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: context.letra(Letra.normal),
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 0.3,
+                    color: p.textDark,
                   ),
                 ),
               ),
-              if (badge != null)
+              ?accion,
+              if (badge != null) ...[
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.badge,
+                    color: p.badge,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     badge!,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: context.letra(Letra.detalle),
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: p.primary,
                     ),
                   ),
                 ),
+              ],
             ],
           ),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: p.divider),
           const SizedBox(height: 10),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: 12),
           if (expand) Expanded(child: child) else child,
         ],
       ),
