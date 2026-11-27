@@ -9,13 +9,11 @@ import '../models/usuario.dart';
 import '../viewmodels/agenda_view_model.dart';
 import '../viewmodels/auth_view_model.dart';
 import 'widgets/date_bar.dart';
-import 'widgets/menu_section.dart';
-import 'widgets/dia_completado_boton.dart';
 import 'widgets/routine_section.dart';
 import 'widgets/top_bar.dart';
 
 /// Pantalla "Día a día" para tablet en horizontal.
-/// El horario ocupa la columna grande; menú y fin de día, la pequeña.
+/// El cuerpo es solo el horario; el menú y el fin de día están en su cabecera.
 /// Todo se ajusta al alto de la pantalla, sin scroll.
 class AgendaPage extends StatelessWidget {
   const AgendaPage({super.key, this.tareaRepository});
@@ -96,26 +94,7 @@ class AgendaPage extends StatelessWidget {
                     const SizedBox(height: 10),
                     const DateBar(),
                     const SizedBox(height: 12),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: const [
-                          Expanded(flex: 8, child: RoutineSection()),
-                          SizedBox(width: 12),
-                          Expanded(
-                            flex: 4,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(child: MenuSection()),
-                                SizedBox(height: 12),
-                                DiaCompletadoBoton(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const Expanded(child: RoutineSection()),
                   ],
                 ),
               ),

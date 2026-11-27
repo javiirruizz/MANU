@@ -100,7 +100,7 @@ void main() {
 
         expect(find.text('Mi Agenda'), findsOneWidget);
         expect(find.text('Mi horario'), findsOneWidget);
-        expect(find.text('MENÚ'), findsOneWidget);
+        expect(find.text('Menú del comedor'), findsOneWidget);
 
         // Ninguna acción de gestión debe aparecer en la agenda del alumno
         expect(find.text('Panel del profesor'), findsNothing);

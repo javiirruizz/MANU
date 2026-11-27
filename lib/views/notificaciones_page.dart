@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/app_theme.dart';
-import '../core/tamanos.dart';
 import '../data/audio_service.dart';
 import '../data/notificacion_repository.dart';
 import '../data/usuario_repository.dart';
@@ -9,80 +8,6 @@ import '../models/notificacion.dart';
 import '../models/usuario.dart';
 import 'widgets/avatar_usuario.dart';
 import 'widgets/pictograma_imagen.dart';
-
-/// Botón de la barra superior: campana con el número de avisos sin leer.
-class BotonBandeja extends StatelessWidget {
-  const BotonBandeja({super.key, required this.alumno});
-
-  final Usuario alumno;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return StreamBuilder<List<Notificacion>>(
-      stream: NotificacionService().watchNotificacionesAlumno(alumno.id),
-      builder: (context, snap) {
-        final sinLeer = (snap.data ?? [])
-            .where((n) => !n.estaLeidaPor(alumno.id))
-            .length;
-        return Tooltip(
-          message: 'Mis avisos',
-          child: Material(
-            color: sinLeer > 0 ? p.orangeSoft : p.tabTrack,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => NotificacionesPage(alumno: alumno),
-                ),
-              ),
-              child: SizedBox(
-                width: context.medida(56),
-                height: context.medida(56),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      sinLeer > 0
-                          ? Icons.notifications_active
-                          : Icons.notifications_none,
-                      color: sinLeer > 0 ? p.orange : p.textDark,
-                      size: 30,
-                    ),
-                    if (sinLeer > 0)
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '$sinLeer',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
 
 /// HU 36: bandeja de entrada del alumno.
 class NotificacionesPage extends StatefulWidget {

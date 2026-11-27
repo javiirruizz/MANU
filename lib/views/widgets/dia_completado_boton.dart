@@ -7,7 +7,7 @@ import '../../viewmodels/agenda_view_model.dart';
 import 'valoracion_dialog.dart';
 
 /// Botón de fin de día: abre la ventana de satisfacción (emoción + estrellas).
-/// Sustituye al antiguo cuadro "¿Cómo me siento?".
+/// Sustituye al antiguo cuadro "¿Cómo me siento?". Va en la cabecera del horario.
 class DiaCompletadoBoton extends StatelessWidget {
   const DiaCompletadoBoton({super.key});
 
@@ -33,7 +33,8 @@ class DiaCompletadoBoton extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: hecho ? p.green : p.primary,
         foregroundColor: Colors.white,
-        minimumSize: Size.fromHeight(context.medida(84)),
+        minimumSize: Size(0, context.medida(60)),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
