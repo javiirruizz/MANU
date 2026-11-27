@@ -7,6 +7,7 @@ import '../../data/usuario_repository.dart';
 import '../../models/tarea.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
+import '../widgets/confirmar_salida.dart';
 
 /// Pantalla principal del rol Familiar (HU 34: gestión de tareas domésticas).
 class FamiliarHomePage extends StatefulWidget {
@@ -354,7 +355,7 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
         title: Text('Panel Familiar · Hola, ${familiar.nombre}'),
         actions: [
           TextButton.icon(
-            onPressed: auth.cerrarSesion,
+            onPressed: () => confirmarCerrarSesion(context),
             icon: const Icon(Icons.logout),
             label: const Text('Cerrar sesión'),
           ),

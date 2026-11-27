@@ -14,6 +14,7 @@ import '../viewmodels/gestor_tareas_view_model.dart';
 import '../viewmodels/usuario_view_model.dart';
 import 'agenda_page.dart';
 import 'profesor/seguimiento_page.dart';
+import 'widgets/confirmar_salida.dart';
 import 'widgets/avatar_usuario.dart';
 import 'widgets/perfil_dialog.dart';
 import 'alta_usuario_page.dart';
@@ -87,7 +88,7 @@ class AdminHomePage extends StatelessWidget {
         ),
         actions: [
           TextButton.icon(
-            onPressed: auth.cerrarSesion,
+            onPressed: () => confirmarCerrarSesion(context),
             icon: const Icon(Icons.logout),
             label: const Text('Cerrar sesión'),
           ),

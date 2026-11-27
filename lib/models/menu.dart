@@ -64,15 +64,15 @@ class Menu {
     final listaAntigua =
         m['platos'] is List ? List<String>.from(m['platos']) : <String>[];
 
-    final primer = m['primerPlato'] is Map<String, dynamic>
+    final primer = m['primerPlato'] is Map
         ? PlatoMenu.fromMap(Map<String, dynamic>.from(m['primerPlato']))
         : PlatoMenu(nombre: listaAntigua.isNotEmpty ? listaAntigua[0] : '');
 
-    final segundo = m['segundoPlato'] is Map<String, dynamic>
+    final segundo = m['segundoPlato'] is Map
         ? PlatoMenu.fromMap(Map<String, dynamic>.from(m['segundoPlato']))
         : PlatoMenu(nombre: listaAntigua.length > 1 ? listaAntigua[1] : '');
 
-    final postreObj = m['postre'] is Map<String, dynamic>
+    final postreObj = m['postre'] is Map
         ? PlatoMenu.fromMap(Map<String, dynamic>.from(m['postre']))
         : PlatoMenu(nombre: m['postre']?.toString() ?? '');
 

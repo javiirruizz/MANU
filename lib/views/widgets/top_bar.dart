@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/app_colors.dart';
 import '../../data/audio_service.dart';
 import '../../data/notificacion_repository.dart';
 import '../../models/notificacion.dart';
@@ -9,6 +8,7 @@ import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'pictograma_imagen.dart';
 import 'avatar_usuario.dart';
+import 'confirmar_salida.dart';
 import 'perfil_dialog.dart';
 import '../notificaciones_page.dart';
 import '../../core/app_theme.dart'; // Importante para context.palette
@@ -120,12 +120,7 @@ class TopBar extends StatelessWidget {
             tooltip: 'Cerrar sesión',
             background: context.palette.tabTrack,
             color: context.palette.textDark,
-            onTap: () {
-              final nav = Navigator.of(context);
-              final authVm = context.read<AuthViewModel>();
-              nav.popUntil((r) => r.isFirst);
-              authVm.cerrarSesion();
-            },
+            onTap: () => confirmarCerrarSesion(context),
           ),
         ],
       ),
@@ -264,54 +259,9 @@ class _ReceptorNotificacionesState extends State<_ReceptorNotificaciones> {
           });
         }
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _SquareButton(
-              icon: Icons.notifications_outlined,
-              tooltip: 'Avisos (${noLeidas.length} sin leer)',
-              background: noLeidas.isNotEmpty
-                  ? AppColors.orangeSoft
-                  : context
-                        .palette
-                        .tabTrack, // Cambio dinámico (el naranja lo dejamos fijo porque es de alerta universal)
-              color: noLeidas.isNotEmpty
-                  ? AppColors.orange
-                  : context.palette.textDark, // Cambio dinámico
-              onTap: () {
-                if (noLeidas.isNotEmpty) {
-                  _mostrarAlertaUrgente(noLeidas.first);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('No tienes avisos pendientes.'),
-                    ),
-                  );
-                }
-              },
-            ),
-            if (noLeidas.isNotEmpty)
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${noLeidas.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
+        // Solo escucha y lanza la alerta: el icono visible es la campana
+        // de la bandeja (BotonBandeja), así no salen dos símbolos.
+        return const SizedBox.shrink();
       },
     );
   }

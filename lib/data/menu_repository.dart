@@ -20,26 +20,45 @@ class MenuRepository {
     return '${comedorId}_$y-$m-$d';
   }
 
+  /// Consulta solo por rango de fechas (índice simple, automático en
+  /// Firestore) y filtra el comedor en cliente. Combinar `comedorId ==` con
+  /// un rango de `fecha` exige un índice compuesto que no existe, y la
+  /// consulta fallaba sin mostrar nada ("No hay menú publicado").
+  Query<Map<String, dynamic>> _rango(
+    FirebaseFirestore db,
+    DateTime desde,
+    DateTime hasta,
+  ) => db
+      .collection('menus')
+      .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
+      .where('fecha', isLessThan: Timestamp.fromDate(hasta));
+
+  List<Menu> _delComedor(
+    QuerySnapshot<Map<String, dynamic>> snap,
+    String comedorId,
+  ) =>
+      snap.docs
+          .map((d) => Menu.fromMap(d.id, d.data()))
+          .where((m) => m.comedorId == comedorId)
+          .toList()
+        ..sort((a, b) => a.fecha.compareTo(b.fecha));
+
+  static DateTime _inicioDeHoy() {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day);
+  }
+
   /// Stream en tiempo real del menú de hoy (se actualiza al instante al editar).
   Stream<Menu?> watchMenuDeHoy(String comedorId) {
     final db = _db;
     if (db == null) return Stream.value(null);
 
-    final n = DateTime.now();
-    final inicio = DateTime(n.year, n.month, n.day);
-    final fin = inicio.add(const Duration(days: 1));
-
-    return db
-        .collection('menus')
-        .where('comedorId', isEqualTo: comedorId)
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
-        .where('fecha', isLessThan: Timestamp.fromDate(fin))
-        .limit(1)
-        .snapshots()
-        .map((snap) {
-      if (snap.docs.isEmpty) return null;
-      return Menu.fromMap(snap.docs.first.id, snap.docs.first.data());
-    });
+    final inicio = _inicioDeHoy();
+    return _rango(
+      db,
+      inicio,
+      inicio.add(const Duration(days: 1)),
+    ).snapshots().map((snap) => _delComedor(snap, comedorId).firstOrNull);
   }
 
   /// Stream en tiempo real de todos los menús de una semana (lunes a domingo).
@@ -48,17 +67,11 @@ class MenuRepository {
     if (db == null) return Stream.value(const []);
 
     final inicio = DateTime(lunes.year, lunes.month, lunes.day);
-    final fin = inicio.add(const Duration(days: 7));
-
-    return db
-        .collection('menus')
-        .where('comedorId', isEqualTo: comedorId)
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
-        .where('fecha', isLessThan: Timestamp.fromDate(fin))
-        .orderBy('fecha')
-        .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => Menu.fromMap(d.id, d.data())).toList());
+    return _rango(
+      db,
+      inicio,
+      inicio.add(const Duration(days: 7)),
+    ).snapshots().map((snap) => _delComedor(snap, comedorId));
   }
 
   /// Publica o actualiza el menú de un día específico.
@@ -74,23 +87,13 @@ class MenuRepository {
 
   /// Menú de hoy (consulta puntual).
   Future<Menu?> getMenuDeHoy(String comedorId) async {
-    final db = _db;
-    if (db == null) return null;
-
-    final n = DateTime.now();
-    final inicio = DateTime(n.year, n.month, n.day);
-    final fin = inicio.add(const Duration(days: 1));
-
-    final snap = await db
-        .collection('menus')
-        .where('comedorId', isEqualTo: comedorId)
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
-        .where('fecha', isLessThan: Timestamp.fromDate(fin))
-        .limit(1)
-        .get();
-
-    if (snap.docs.isEmpty) return null;
-    return Menu.fromMap(snap.docs.first.id, snap.docs.first.data());
+    final inicio = _inicioDeHoy();
+    final lista = await getMenus(
+      comedorId,
+      desde: inicio,
+      hasta: inicio.add(const Duration(days: 1)),
+    );
+    return lista.firstOrNull;
   }
 
   /// Menús de un rango de fechas.
@@ -102,14 +105,7 @@ class MenuRepository {
     final db = _db;
     if (db == null) return const [];
 
-    final snap = await db
-        .collection('menus')
-        .where('comedorId', isEqualTo: comedorId)
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
-        .where('fecha', isLessThan: Timestamp.fromDate(hasta))
-        .orderBy('fecha')
-        .get();
-
-    return snap.docs.map((d) => Menu.fromMap(d.id, d.data())).toList();
+    final snap = await _rango(db, desde, hasta).get();
+    return _delComedor(snap, comedorId);
   }
 }

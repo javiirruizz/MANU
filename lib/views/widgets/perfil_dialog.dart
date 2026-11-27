@@ -2,15 +2,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_theme.dart';
-import '../../data/pictograma_repository.dart';
 import '../../data/storage_repositoty.dart';
 import '../../data/usuario_repository.dart';
-import '../../models/pictograma.dart';
+import '../../models/avatar_animal.dart';
 import '../../viewmodels/auth_view_model.dart';
 import 'avatar_usuario.dart';
-import 'pictograma_selector_dialog.dart';
 
-/// HU 06: cambiar la foto de perfil (subir una foto o elegir un pictograma).
+/// HU 06: cambiar la foto de perfil (elegir un animal o subir una foto).
 Future<void> mostrarPerfil(BuildContext context) {
   return showDialog<void>(
     context: context,
@@ -61,18 +59,12 @@ class _PerfilDialogState extends State<_PerfilDialog> {
     if (mounted) setState(() => _guardando = false);
   }
 
-  Future<void> _elegirPictograma() async {
-    final elegido = await showDialog<Pictograma>(
-      context: context,
-      builder: (_) =>
-          PictogramaSelectorDialog(repository: PictogramaRepository()),
-    );
-    if (elegido == null) return;
+  Future<void> _elegirAnimal(AvatarAnimal animal) async {
     setState(() {
       _guardando = true;
       _mensaje = null;
     });
-    await _guardar(elegido.urlResuelta);
+    await _guardar(animal.valor);
     if (mounted) setState(() => _guardando = false);
   }
 
@@ -110,28 +102,39 @@ class _PerfilDialogState extends State<_PerfilDialog> {
                 ),
               ),
               const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: _guardando ? null : _subirFoto,
-                icon: const Icon(Icons.photo_camera_outlined, size: 30),
-                label: const Text(
-                  'Subir una foto',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: p.primary,
-                  minimumSize: const Size.fromHeight(68),
+              Text(
+                'Elige tu animal',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: p.primary,
                 ),
               ),
               const SizedBox(height: 12),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final a in AvatarAnimal.todos)
+                    _OpcionAnimal(
+                      animal: a,
+                      elegido: usuario.fotoUrl == a.valor,
+                      onTap: _guardando ? null : () => _elegirAnimal(a),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: _guardando ? null : _elegirPictograma,
-                icon: const Icon(Icons.emoji_emotions_outlined, size: 30),
+                onPressed: _guardando ? null : _subirFoto,
+                icon: const Icon(Icons.photo_camera_outlined, size: 30),
                 label: const Text(
-                  'Elegir un pictograma',
+                  'O sube una foto',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                 ),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(68),
+                  minimumSize: const Size.fromHeight(64),
                 ),
               ),
               if (_guardando) ...[
@@ -156,6 +159,47 @@ class _PerfilDialogState extends State<_PerfilDialog> {
                 child: const Text('Cerrar', style: TextStyle(fontSize: 20)),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OpcionAnimal extends StatelessWidget {
+  const _OpcionAnimal({
+    required this.animal,
+    required this.elegido,
+    required this.onTap,
+  });
+
+  final AvatarAnimal animal;
+  final bool elegido;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      button: true,
+      selected: elegido,
+      label: animal.nombre,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: animal.nombre,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: elegido ? p.green : Colors.transparent,
+                width: 4,
+              ),
+            ),
+            child: DibujoAnimal(animal: animal, size: 78),
           ),
         ),
       ),

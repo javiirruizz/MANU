@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/paso.dart';
 import '../models/tarea.dart';
+import '../models/valoracion.dart';
 
 class TareaRepository {
   TareaRepository({FirebaseFirestore? firestore})
@@ -64,12 +65,17 @@ class TareaRepository {
     await batch.commit();
   }
 
-  Future<void> actualizarRecursosMultimedia(String tareaId, {String? videoUrl, String? audioUrl, String? enlaceWeb}) async {
+  Future<void> actualizarRecursosMultimedia(
+    String tareaId, {
+    String? videoUrl,
+    String? audioUrl,
+    String? enlaceWeb,
+  }) async {
     final db = _firestore;
     if (db == null) return;
 
     Map<String, dynamic> dataToUpdate = {};
-    
+
     if (videoUrl != null) dataToUpdate['videoUrl'] = videoUrl;
     if (audioUrl != null) dataToUpdate['audioUrl'] = audioUrl;
     if (enlaceWeb != null) dataToUpdate['enlaceWeb'] = enlaceWeb;
@@ -201,7 +207,9 @@ class TareaRepository {
     await batch.commit();
   }
 
-  /// HU 22: guarda la emoción y las estrellas del alumno en el registro de la tarea.
+  /// HU 22: guarda la emoción y las estrellas del alumno en el registro de la
+  /// tarea. En la misma escritura deja la tarea como completada, para que
+  /// valoración y "hecha" nunca queden desincronizadas.
   Future<void> guardarValoracion({
     required String tareaId,
     required String alumnoId,
@@ -212,6 +220,7 @@ class TareaRepository {
     if (db == null) return;
 
     await db.collection('tareas').doc(tareaId).update({
+      'completadaPor.$alumnoId': FieldValue.serverTimestamp(),
       'valoraciones.$alumnoId': {
         'emocion': emocionId,
         'estrellas': estrellas,
@@ -220,22 +229,90 @@ class TareaRepository {
     });
   }
 
-  /// HU 29: historial de tareas de un alumno (hasta hoy), más recientes primero.
-  Future<List<Tarea>> getHistorialAlumno(String alumnoId) async {
+  /// HU 29: tareas de un alumno en la semana que empieza en [lunes]
+  /// (lunes a domingo), en tiempo real y en orden cronológico.
+  Stream<List<Tarea>> streamTareasAlumnoSemana(
+    String alumnoId,
+    DateTime lunes,
+  ) {
     final db = _firestore;
-    if (db == null) return const [];
+    if (db == null) return Stream.value(const []);
 
-    final snap = await db
+    final inicio = DateTime(lunes.year, lunes.month, lunes.day);
+    final fin = DateTime(inicio.year, inicio.month, inicio.day + 7);
+    return db
         .collection('tareas')
         .where('alumnoIds', arrayContains: alumnoId)
-        .get();
-    final manana = DateTime.now().add(const Duration(days: 1));
-    final limite = DateTime(manana.year, manana.month, manana.day);
-    final lista = snap.docs
-        .map((d) => Tarea.fromMap(d.id, d.data()))
-        .where((t) => t.fecha.isBefore(limite))
-        .toList()
-      ..sort((a, b) => b.horaInicio.compareTo(a.horaInicio));
-    return lista;
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs
+                  .map((d) => Tarea.fromMap(d.id, d.data()))
+                  .where(
+                    (t) => !t.fecha.isBefore(inicio) && t.fecha.isBefore(fin),
+                  )
+                  .toList()
+                ..sort((a, b) => a.horaInicio.compareTo(b.horaInicio)),
+        );
+  }
+
+  // ---- Valoración del día completo ----
+
+  static String _idDia(String alumnoId, DateTime d) =>
+      '${alumnoId}_${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Guarda cómo le ha ido el día al alumno (al pulsar "¡Día completado!").
+  /// Un documento por alumno y día: si lo repite, se sobrescribe.
+  Future<void> guardarValoracionDia({
+    required String alumnoId,
+    required DateTime dia,
+    required String emocionId,
+    required int estrellas,
+  }) async {
+    final db = _firestore;
+    if (db == null) return;
+
+    final d = DateTime(dia.year, dia.month, dia.day);
+    await db.collection('valoracionesDia').doc(_idDia(alumnoId, d)).set({
+      'alumnoId': alumnoId,
+      'dia': Timestamp.fromDate(d),
+      'emocion': emocionId,
+      'estrellas': estrellas,
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Valoraciones de día de un alumno en la semana de [lunes], por fecha.
+  Stream<Map<DateTime, ValoracionTarea>> streamValoracionesDiaSemana(
+    String alumnoId,
+    DateTime lunes,
+  ) {
+    final db = _firestore;
+    if (db == null) return Stream.value(const {});
+
+    final inicio = DateTime(lunes.year, lunes.month, lunes.day);
+    final fin = DateTime(inicio.year, inicio.month, inicio.day + 7);
+    return db
+        .collection('valoracionesDia')
+        .where('alumnoId', isEqualTo: alumnoId)
+        .snapshots()
+        .map((snap) {
+          final res = <DateTime, ValoracionTarea>{};
+          for (final doc in snap.docs) {
+            final m = doc.data();
+            final ts = m['dia'];
+            if (ts is! Timestamp) continue;
+            final d = ts.toDate();
+            final dia = DateTime(d.year, d.month, d.day);
+            if (dia.isBefore(inicio) || !dia.isBefore(fin)) continue;
+            final f = m['fecha'];
+            res[dia] = ValoracionTarea(
+              emocionId: (m['emocion'] ?? '').toString(),
+              estrellas: (m['estrellas'] as num?)?.toInt() ?? 0,
+              fecha: f is Timestamp ? f.toDate() : DateTime.now(),
+            );
+          }
+          return res;
+        });
   }
 }

@@ -10,7 +10,7 @@ import '../viewmodels/agenda_view_model.dart';
 import '../viewmodels/auth_view_model.dart';
 import 'widgets/date_bar.dart';
 import 'widgets/menu_section.dart';
-import 'widgets/mood_section.dart';
+import 'widgets/dia_completado_boton.dart';
 import 'widgets/routine_section.dart';
 import 'widgets/top_bar.dart';
 import 'widgets/selector_tema_widget.dart';
@@ -124,7 +124,7 @@ class AgendaPage extends StatelessWidget {
                                 children: [
                                   MenuSection(),
                                   SizedBox(height: 12),
-                                  MoodSection(),
+                                  DiaCompletadoBoton(),
                                 ],
                               ),
                             ),

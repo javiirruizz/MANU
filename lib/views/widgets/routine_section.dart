@@ -70,6 +70,21 @@ class _RoutineSectionState extends State<RoutineSection> {
   Widget build(BuildContext context) {
     final vm = context.watch<AgendaViewModel>();
 
+    // Si algo no se ha podido guardar, se avisa (antes fallaba en silencio)
+    final aviso = vm.consumirAviso();
+    if (aviso != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(aviso, style: const TextStyle(fontSize: 18)),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      });
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -200,9 +215,9 @@ class _RoutineSectionState extends State<RoutineSection> {
             completada: vm.esCompletada(t),
             onToggle: () async {
               final yaHecha = vm.esCompletada(t);
-              await vm.toggleTask(t.id);
+              final ok = await vm.toggleTask(t.id);
               // HU 22: al terminar la tarea se abre el panel de emoción
-              if (!yaHecha && context.mounted) {
+              if (ok && !yaHecha && context.mounted) {
                 mostrarValoracion(context, vm: vm, tarea: t);
               }
             },
