@@ -23,6 +23,8 @@ import 'widgets/enviar_notificacion_dialog.dart';
 import 'widgets/gestion_menu_dialog.dart';
 import 'widgets/gestion_roles_dialog.dart';
 import 'widgets/pictograma_selector_dialog.dart';
+import 'familiar/conversaciones_page.dart';
+import 'widgets/insignia_mensajes.dart';
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
@@ -210,6 +212,19 @@ class AdminHomePage extends StatelessWidget {
           ).push(MaterialPageRoute(builder: (_) => const SeguimientoPage())),
         ),
 
+      if (user.rol == RolUsuario.profesor)
+        _Acceso(
+          icono: Icons.chat_bubble_outline,
+          titulo: 'Mensajes',
+          detalle: 'Hablar con las familias',
+          fondo: p.cardTint,
+          color: p.primary,
+          conInsignia: true,
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ConversacionesPage())),
+        ),
+
       // --- Mi perfil (HU 06) ---
       _Acceso(
         icono: Icons.account_circle_outlined,
@@ -312,6 +327,7 @@ class _Acceso {
     required this.color,
     required this.onTap,
     this.destacada = false,
+    this.conInsignia = false,
   });
 
   final IconData icono;
@@ -321,6 +337,7 @@ class _Acceso {
   final Color color;
   final VoidCallback onTap;
   final bool destacada;
+  final bool conInsignia;
 }
 
 class _Cabecera extends StatelessWidget {
@@ -400,7 +417,7 @@ class _TarjetaAcceso extends StatelessWidget {
     final textoTitulo = acceso.destacada ? Colors.white : p.textDark;
     final textoDetalle = acceso.destacada ? Colors.white70 : p.textSoft;
 
-    return Material(
+    final tarjeta = Material(
       color: acceso.fondo,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -450,5 +467,9 @@ class _TarjetaAcceso extends StatelessWidget {
         ),
       ),
     );
+
+    if (!acceso.conInsignia) return tarjeta;
+    final uid = context.read<AuthViewModel>().usuario?.id;
+    return uid == null ? tarjeta : InsigniaMensajes(uid: uid, child: tarjeta);
   }
 }

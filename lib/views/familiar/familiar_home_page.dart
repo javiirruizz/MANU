@@ -1,13 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../data/tarea_repository.dart';
 import '../../data/usuario_repository.dart';
 import '../../models/tarea.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import '../widgets/confirmar_salida.dart';
+import '../widgets/insignia_mensajes.dart';
+import '../widgets/pictograma_imagen.dart';
+import 'conversaciones_page.dart';
 
 /// Pantalla principal del rol Familiar (HU 34: gestión de tareas domésticas).
 class FamiliarHomePage extends StatefulWidget {
@@ -77,6 +80,26 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
     }
   }
 
+  InputDecoration _deco(AppPalette p, String etiqueta, {String? hint}) =>
+      InputDecoration(
+        labelText: etiqueta,
+        labelStyle: const TextStyle(fontSize: 16),
+        hintText: hint,
+        filled: true,
+        fillColor: p.background,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      );
+
+  ButtonStyle get _estiloHora => OutlinedButton.styleFrom(
+    minimumSize: const Size(0, 54),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  );
+
   Future<void> _abrirFormularioTarea({
     required Usuario familiar,
     required String alumnoId,
@@ -113,6 +136,8 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
+          final p = ctx.palette;
+
           Future<void> elegirHora(bool esInicio) async {
             final pick = await showTimePicker(
               context: ctx,
@@ -136,69 +161,92 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
           }
 
           return AlertDialog(
+            backgroundColor: p.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             title: Text(
               esEdicion
                   ? 'Editar tarea familiar'
                   : 'Nueva tarea doméstica / en casa',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: p.textDark,
+              ),
             ),
             content: SizedBox(
-              width: 460,
+              width: 480,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (!esEdicion) ...[
-                      const Text(
+                      Text(
                         'Sugerencias rápidas:',
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17,
+                          color: p.textDark,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: sugerenciasCasa
                             .map(
                               (s) => ActionChip(
                                 label: Text(s),
+                                labelStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                backgroundColor: p.cardTint,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 8,
+                                ),
                                 onPressed: () =>
                                     setDialogState(() => nombreCtrl.text = s),
                               ),
                             )
                             .toList(),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                     ],
                     TextField(
                       controller: nombreCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de la tarea *',
-                        hintText: 'Ej. Hacer la cama',
-                        border: OutlineInputBorder(),
+                      style: const TextStyle(fontSize: 18),
+                      decoration: _deco(
+                        p,
+                        'Nombre de la tarea *',
+                        hint: 'Ej. Hacer la cama',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: descCtrl,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Indicaciones (opcional)',
-                        border: OutlineInputBorder(),
-                      ),
+                      style: const TextStyle(fontSize: 17),
+                      decoration: _deco(p, 'Indicaciones (opcional)'),
                     ),
-                    const SizedBox(height: 14),
-                    const Text(
+                    const SizedBox(height: 16),
+                    Text(
                       'Horario:',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: p.textDark,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
+                            style: _estiloHora,
                             icon: const Icon(Icons.access_time),
                             label: Text(
                               'Inicio: ${horaInicio.hour.toString().padLeft(2, '0')}:${horaInicio.minute.toString().padLeft(2, '0')}',
@@ -209,6 +257,7 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
+                            style: _estiloHora,
                             icon: const Icon(Icons.access_time_filled),
                             label: Text(
                               'Fin: ${horaFin.hour.toString().padLeft(2, '0')}:${horaFin.minute.toString().padLeft(2, '0')}',
@@ -225,9 +274,20 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancelar'),
+                child: const Text('Cancelar', style: TextStyle(fontSize: 17)),
               ),
               FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: p.primary,
+                  minimumSize: const Size(0, 52),
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
                 icon: const Icon(Icons.save),
                 label: Text(esEdicion ? 'Guardar cambios' : 'Crear tarea'),
                 onPressed: () async {
@@ -309,6 +369,9 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
         },
       ),
     );
+
+    nombreCtrl.dispose();
+    descCtrl.dispose();
   }
 
   Future<void> _confirmarBorrado(Usuario familiar, Tarea tarea) async {
@@ -316,22 +379,40 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
 
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar tarea familiar'),
-        content: Text(
-          '¿Seguro que deseas eliminar "${tarea.nombre}" de la agenda?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
+      builder: (ctx) {
+        final p = ctx.palette;
+        return AlertDialog(
+          backgroundColor: p.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          title: Text(
+            'Eliminar tarea familiar',
+            style: TextStyle(fontWeight: FontWeight.w800, color: p.textDark),
           ),
-        ],
-      ),
+          content: Text(
+            '¿Seguro que deseas eliminar "${tarea.nombre}" de la agenda?',
+            style: TextStyle(fontSize: 18, color: p.textDark),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar', style: TextStyle(fontSize: 17)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmar == true) {
@@ -344,15 +425,342 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
     }
   }
 
+  // ------------------------------------------------------------ interfaz
+
+  Widget _tarjetaMensajes(Usuario familiar, AppPalette p) {
+    return InsigniaMensajes(
+      uid: familiar.id,
+      child: Material(
+        color: p.primary,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ConversacionesPage())),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chat_bubble_outline,
+                    size: 34,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mensajes con el tutor',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Escribe o lee los mensajes',
+                        style: TextStyle(fontSize: 15, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white, size: 32),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _selectorAgenda(AppPalette p) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.child_care, color: p.primary, size: 30),
+              const SizedBox(width: 10),
+              Text(
+                'Agenda de:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: p.textDark,
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Si solo tiene 1 hijo asignado, muestra su nombre fijo;
+              // si tiene varios, muestra el desplegable solo con ellos.
+              Expanded(
+                child: _alumnosAsignados.length == 1
+                    ? Text(
+                        _alumnosAsignados.first.nombre,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: p.primary,
+                        ),
+                      )
+                    : DropdownButton<String>(
+                        value: _alumnoSeleccionadoId,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: p.primary,
+                        ),
+                        items: _alumnosAsignados
+                            .map(
+                              (a) => DropdownMenuItem(
+                                value: a.id,
+                                child: Text(a.nombre),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) =>
+                            setState(() => _alumnoSeleccionadoId = val),
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: p.background,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.chevron_left, color: p.primary, size: 30),
+                  tooltip: 'Día anterior',
+                  onPressed: () => _cambiarDia(-1),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: _seleccionarFecha,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_month,
+                            color: p.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 20,
+                              color: p.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.chevron_right, color: p.primary, size: 30),
+                  tooltip: 'Día siguiente',
+                  onPressed: () => _cambiarDia(1),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tarjetaTarea(Tarea t, Usuario familiar, AppPalette p) {
+    final esPropia = t.creadaPor == familiar.id;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: esPropia ? p.greenSoft : p.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          PictogramaImagen(
+            id: t.pictogramaId,
+            consulta: t.nombre,
+            size: 60,
+            iconoReserva: Icons.event_note_outlined,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: esPropia ? p.greenDark : p.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${Tarea.hhmm(t.horaInicio)} - ${Tarea.hhmm(t.horaFinal)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  t.nombre,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: p.textDark,
+                  ),
+                ),
+                if (t.descripcion.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      t.descripcion,
+                      style: TextStyle(fontSize: 16, color: p.textSoft),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: esPropia ? p.surface : p.cardTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    esPropia ? 'Casa (Editable)' : 'Colegio (Solo lectura)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: esPropia ? p.greenDark : p.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (esPropia) ...[
+            IconButton(
+              icon: Icon(Icons.edit_outlined, color: p.primary, size: 28),
+              tooltip: 'Editar tarea familiar',
+              onPressed: () => _abrirFormularioTarea(
+                familiar: familiar,
+                alumnoId: _alumnoSeleccionadoId!,
+                tareaExistente: t,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+                size: 28,
+              ),
+              tooltip: 'Eliminar tarea familiar',
+              onPressed: () => _confirmarBorrado(familiar, t),
+            ),
+          ] else
+            Tooltip(
+              message: 'Tarea escolar gestionada por el profesorado',
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(Icons.lock_outline, color: p.textSoft, size: 28),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sinAlumnos(AppPalette p) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.family_restroom, size: 64, color: p.primary),
+                const SizedBox(height: 16),
+                Text(
+                  'No tienes ningún alumno asignado a tu cuenta.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: p.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Contacta con la administración del colegio para que vinculen tu cuenta con el estudiante.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: p.textSoft),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final auth = context.watch<AuthViewModel>();
     final familiar = auth.usuario!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: p.background,
       appBar: AppBar(
-        title: Text('Panel Familiar · Hola, ${familiar.nombre}'),
+        title: Text(
+          'Hola, ${familiar.nombre}',
+          style: TextStyle(color: p.primary, fontWeight: FontWeight.w800),
+        ),
         actions: [
           TextButton.icon(
             onPressed: () => confirmarCerrarSesion(context),
@@ -368,313 +776,88 @@ class _FamiliarHomePageState extends State<FamiliarHomePage> {
                 familiar: familiar,
                 alumnoId: _alumnoSeleccionadoId!,
               ),
-              backgroundColor: AppColors.primary,
+              backgroundColor: p.primary,
               foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('Añadir tarea en casa'),
-            ),
-      body: _cargandoAlumnos
-          ? const Center(child: CircularProgressIndicator())
-          : _alumnosAsignados.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.family_restroom,
-                      size: 56,
-                      color: AppColors.textSoft,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'No tienes ningún alumno asignado a tu cuenta.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Contacta con la administración del colegio para que vinculen tu cuenta con el estudiante.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSoft),
-                    ),
-                  ],
-                ),
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'Añadir tarea en casa',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
               ),
-            )
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 820),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.divider),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.child_care,
-                              color: AppColors.primary,
+            ),
+      body: SafeArea(
+        child: _cargandoAlumnos
+            ? Center(child: CircularProgressIndicator(color: p.primary))
+            : _alumnosAsignados.isEmpty
+            ? _sinAlumnos(p)
+            : Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 860),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _tarjetaMensajes(familiar, p),
+                        const SizedBox(height: 12),
+                        _selectorAgenda(p),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: StreamBuilder<List<Tarea>>(
+                            stream: _tareaRepo.streamTareasAlumno(
+                              _alumnoSeleccionadoId!,
+                              _fechaSeleccionada,
                             ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Agenda de:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 10),
-                            // Si solo tiene 1 hijo asignado, muestra su nombre fijo;
-                            // si tiene varios, muestra el desplegable solo con ellos.
-                            if (_alumnosAsignados.length == 1)
-                              Text(
-                                _alumnosAsignados.first.nombre,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            else
-                              DropdownButton<String>(
-                                value: _alumnoSeleccionadoId,
-                                underline: const SizedBox(),
-                                items: _alumnosAsignados
-                                    .map(
-                                      (a) => DropdownMenuItem(
-                                        value: a.id,
-                                        child: Text(
-                                          a.nombre,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) =>
-                                    setState(() => _alumnoSeleccionadoId = val),
-                              ),
-                            const Spacer(),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () => _cambiarDia(-1),
-                            ),
-                            InkWell(
-                              onTap: _seleccionarFecha,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                child: Text(
-                                  '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: p.primary,
                                   ),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: () => _cambiarDia(1),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: StreamBuilder<List<Tarea>>(
-                          stream: _tareaRepo.streamTareasAlumno(
-                            _alumnoSeleccionadoId!,
-                            _fechaSeleccionada,
-                          ),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            final tareas = snapshot.data ?? [];
-                            if (tareas.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No hay actividades programadas para este día.',
-                                  style: TextStyle(color: AppColors.textSoft),
-                                ),
-                              );
-                            }
-
-                            return ListView.separated(
-                              itemCount: tareas.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final t = tareas[index];
-                                final esTareaPropia =
-                                    t.creadaPor == familiar.id;
-
-                                return Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: esTareaPropia
-                                        ? AppColors.greenSoft
-                                        : AppColors.surface,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: esTareaPropia
-                                          ? AppColors.greenDark
-                                          : AppColors.divider,
-                                    ),
-                                  ),
-                                  child: Row(
+                                );
+                              }
+                              final tareas = snapshot.data ?? [];
+                              if (tareas.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: esTareaPropia
-                                              ? AppColors.greenDark
-                                              : AppColors.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          '${Tarea.hhmm(t.horaInicio)} - ${Tarea.hhmm(t.horaFinal)}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                      Icon(
+                                        Icons.event_available,
+                                        size: 64,
+                                        color: p.textSoft,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'No hay actividades programadas para este día.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 19,
+                                          color: p.textSoft,
                                         ),
                                       ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Flexible(
-                                                  child: Text(
-                                                    t.nombre,
-                                                    style: const TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: esTareaPropia
-                                                        ? Colors.white
-                                                        : AppColors.cardBlue,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    esTareaPropia
-                                                        ? 'Casa (Editable)'
-                                                        : 'Colegio (Solo lectura)',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: esTareaPropia
-                                                          ? AppColors.greenDark
-                                                          : AppColors.primary,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (t.descripcion.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 4,
-                                                ),
-                                                child: Text(
-                                                  t.descripcion,
-                                                  style: const TextStyle(
-                                                    color: AppColors.textSoft,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (esTareaPropia) ...[
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit_outlined,
-                                            color: AppColors.primary,
-                                          ),
-                                          tooltip: 'Editar tarea familiar',
-                                          onPressed: () =>
-                                              _abrirFormularioTarea(
-                                                familiar: familiar,
-                                                alumnoId:
-                                                    _alumnoSeleccionadoId!,
-                                                tareaExistente: t,
-                                              ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.redAccent,
-                                          ),
-                                          tooltip: 'Eliminar tarea familiar',
-                                          onPressed: () =>
-                                              _confirmarBorrado(familiar, t),
-                                        ),
-                                      ] else
-                                        const Tooltip(
-                                          message:
-                                              'Tarea escolar gestionada por el profesorado',
-                                          child: Padding(
-                                            padding: EdgeInsets.all(8.0),
-                                            child: Icon(
-                                              Icons.lock_outline,
-                                              color: AppColors.textSoft,
-                                            ),
-                                          ),
-                                        ),
                                     ],
                                   ),
                                 );
-                              },
-                            );
-                          },
+                              }
+
+                              return ListView.separated(
+                                padding: const EdgeInsets.only(bottom: 100),
+                                itemCount: tareas.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) =>
+                                    _tarjetaTarea(tareas[index], familiar, p),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
