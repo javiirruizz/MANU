@@ -6,6 +6,8 @@ import '../../models/tarea.dart';
 import '../../models/usuario.dart';
 import '../../data/agenda_pdf_service.dart';
 import '../../models/menu.dart';
+import '../../core/app_theme.dart';
+import '../widgets/pictograma_imagen.dart';
 
 enum TipoAsignacion { individual, grupal, recurrente }
 
@@ -422,41 +424,65 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     return enConflicto;
   }
 
+  InputDecoration _deco(
+    AppPalette p,
+    String etiqueta, {
+    String? hint,
+    IconData? icono,
+    bool compacto = false,
+  }) => InputDecoration(
+    labelText: etiqueta,
+    labelStyle: const TextStyle(fontSize: 16),
+    hintText: hint,
+    prefixIcon: icono == null ? null : Icon(icono, size: 26),
+    filled: true,
+    fillColor: p.background,
+    isDense: compacto,
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: compacto ? 12 : 18,
+    ),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+  );
+
+  ButtonStyle get _estiloSecundario => OutlinedButton.styleFrom(
+    minimumSize: const Size(0, 54),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+  );
+
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final solapamientos = _obtenerSolapamientos();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: p.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        title: const Text(
+        title: Text(
           'Planificador y Asignación de Tareas',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: p.primary, fontWeight: FontWeight.w800),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.print_outlined, color: AppColors.primary),
+            icon: Icon(Icons.print_outlined, color: p.primary, size: 28),
             tooltip: 'Exportar/Imprimir',
             onPressed: () => _exportar(imprimir: true),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.picture_as_pdf_outlined,
-              color: AppColors.primary,
+              color: p.primary,
+              size: 28,
             ),
             tooltip: 'Guardar PDF',
             onPressed: () => _exportar(imprimir: false),
           ),
-
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.calendar_today_outlined,
-              color: AppColors.primary,
+              color: p.primary,
+              size: 28,
             ),
             tooltip: 'Cambiar fecha',
             onPressed: _seleccionarFecha,
@@ -466,9 +492,10 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               padding: const EdgeInsets.only(right: 16),
               child: Text(
                 '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: p.textDark,
                 ),
               ),
             ),
@@ -477,12 +504,12 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(flex: 5, child: _buildCronogramaPanel()),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 flex: 6,
                 child: _buildFormularioAsignacion(solapamientos),
@@ -495,6 +522,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   Widget _buildCronogramaPanel() {
+    final p = context.palette;
     final textoFiltroAula = _filtroAulaCtrl.text.trim().toLowerCase();
 
     final tareasDelDia = widget.tareas.where((t) {
@@ -526,150 +554,143 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        color: p.surface,
+        borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Text(
+            'Jornada Escolar',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: p.textDark,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text(
-                'Jornada Escolar',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+              SizedBox(
+                width: 220,
+                child: TextField(
+                  controller: _filtroAulaCtrl,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar aula...',
+                    prefixIcon: Icon(Icons.search, color: p.textSoft),
+                    suffixIcon: _filtroAulaCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              setState(() {
+                                _filtroAulaCtrl.clear();
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: p.background,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    setState(() {});
+                  },
                 ),
               ),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 160,
-                    height: 38,
-                    child: TextField(
-                      controller: _filtroAulaCtrl,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar aula...',
-                        hintStyle: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSoft,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          size: 18,
-                          color: AppColors.textSoft,
-                        ),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        suffixIcon: _filtroAulaCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear, size: 16),
-                                onPressed: () {
-                                  setState(() {
-                                    _filtroAulaCtrl.clear();
-                                  });
-                                },
-                              )
-                            : null,
-                      ),
-                      onChanged: (val) {
-                        setState(() {});
-                      },
-                    ),
+              Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: p.background,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: DropdownButton<String?>(
+                  value: _filtroAlumnoId,
+                  underline: const SizedBox(),
+                  hint: const Text(
+                    'Todos los alumnos',
+                    style: TextStyle(fontSize: 16),
                   ),
-                  const SizedBox(width: 8),
-                  DropdownButton<String?>(
-                    value: _filtroAlumnoId,
-                    underline: const SizedBox(),
-                    hint: const Text(
-                      'Todos los alumnos',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textDark,
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Todos los alumnos'),
-                      ),
-                      ...widget.alumnos.map(
-                        (a) => DropdownMenuItem<String?>(
-                          value: a.id,
-                          child: Text(a.nombre),
-                        ),
-                      ),
-                    ],
-                    onChanged: (val) => setState(() => _filtroAlumnoId = val),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: p.textDark,
                   ),
-                ],
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Todos los alumnos'),
+                    ),
+                    ...widget.alumnos.map(
+                      (a) => DropdownMenuItem<String?>(
+                        value: a.id,
+                        child: Text(a.nombre),
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) => setState(() => _filtroAlumnoId = val),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
+          // ---- Selector de día ----
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
+              color: p.background,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.chevron_left,
-                    color: AppColors.primary,
-                  ),
+                  icon: Icon(Icons.chevron_left, color: p.primary, size: 30),
                   tooltip: 'Día anterior',
                   onPressed: () => _cambiarDia(-1),
                 ),
-                InkWell(
-                  onTap: _seleccionarFecha,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_month,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                            fontSize: 15,
+                Expanded(
+                  child: InkWell(
+                    onTap: _seleccionarFecha,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_month,
+                            color: p.primary,
+                            size: 24,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_fechaSeleccionada.day.toString().padLeft(2, '0')}/${_fechaSeleccionada.month.toString().padLeft(2, '0')}/${_fechaSeleccionada.year}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: p.textDark,
+                              fontSize: 19,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.primary,
-                  ),
+                  icon: Icon(Icons.chevron_right, color: p.primary, size: 30),
                   tooltip: 'Día siguiente',
                   onPressed: () => _cambiarDia(1),
                 ),
@@ -682,13 +703,17 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                         widget.onFechaCambiada!(fechaActual);
                       }
                     },
-                    child: const Text('Hoy'),
+                    child: const Text(
+                      'Hoy',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
           const SizedBox(height: 12),
 
           Expanded(
@@ -696,16 +721,17 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(
                           Icons.event_available,
-                          size: 50,
-                          color: AppColors.textSoft,
+                          size: 60,
+                          color: p.textSoft,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           'No hay tareas asignadas con estos filtros.',
-                          style: TextStyle(color: AppColors.textSoft),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 17, color: p.textSoft),
                         ),
                       ],
                     ),
@@ -722,41 +748,27 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
 
                       return InkWell(
                         onTap: () => _cargarTareaParaEdicion(tarea),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: esSeleccionada
-                                ? AppColors.primary.withAlpha(20)
-                                : AppColors.cardBlue,
-                            borderRadius: BorderRadius.circular(12),
+                            color: esSeleccionada ? p.cardTint : p.background,
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: esSeleccionada
-                                  ? AppColors.primary
-                                  : AppColors.primary.withAlpha(50),
-                              width: esSeleccionada ? 2 : 1,
+                                  ? p.primary
+                                  : Colors.transparent,
+                              width: 3,
                             ),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  horaStr,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                              PictogramaImagen(
+                                id: tarea.pictogramaId,
+                                consulta: tarea.nombre,
+                                size: 56,
+                                iconoReserva: Icons.event_note_outlined,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -765,48 +777,66 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                   children: [
                                     Row(
                                       children: [
-                                        Expanded(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: p.primary,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
                                           child: Text(
-                                            tarea.nombre,
+                                            horaStr,
                                             style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
                                             ),
                                           ),
                                         ),
-                                        // Iconos indicadores de recursos multimedia adjuntos
+                                        const Spacer(),
+                                        // Iconos indicadores de recursos adjuntos
                                         if (tarea.audioUrl != null)
-                                          const Padding(
-                                            padding: EdgeInsets.only(left: 4),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 6,
+                                            ),
                                             child: Icon(
                                               Icons.audiotrack,
-                                              size: 16,
-                                              color: AppColors.primary,
+                                              size: 20,
+                                              color: p.primary,
                                             ),
                                           ),
                                         if (tarea.videoUrl != null)
-                                          const Padding(
-                                            padding: EdgeInsets.only(left: 4),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 6,
+                                            ),
                                             child: Icon(
                                               Icons.videocam,
-                                              size: 16,
-                                              color: AppColors.primary,
+                                              size: 20,
+                                              color: p.primary,
                                             ),
                                           ),
                                         if (tarea.enlaceWeb != null &&
                                             tarea.enlaceWeb!.isNotEmpty)
-                                          const Padding(
-                                            padding: EdgeInsets.only(left: 4),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 6,
+                                            ),
                                             child: Icon(
                                               Icons.link,
-                                              size: 16,
-                                              color: AppColors.primary,
+                                              size: 20,
+                                              color: p.primary,
                                             ),
                                           ),
                                         if (tarea.pasos.isNotEmpty)
                                           Padding(
                                             padding: const EdgeInsets.only(
-                                              left: 4,
+                                              left: 6,
                                             ),
                                             child: Tooltip(
                                               message:
@@ -814,18 +844,18 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  const Icon(
+                                                  Icon(
                                                     Icons.checklist,
-                                                    size: 16,
-                                                    color: AppColors.primary,
+                                                    size: 20,
+                                                    color: p.primary,
                                                   ),
                                                   Text(
                                                     '${tarea.pasos.length}',
-                                                    style: const TextStyle(
-                                                      fontSize: 11,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
                                                       fontWeight:
-                                                          FontWeight.bold,
-                                                      color: AppColors.primary,
+                                                          FontWeight.w800,
+                                                      color: p.primary,
                                                     ),
                                                   ),
                                                 ],
@@ -834,22 +864,31 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                           ),
                                       ],
                                     ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      tarea.nombre,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 19,
+                                        color: p.textDark,
+                                      ),
+                                    ),
                                     if (tarea.descripcion.isNotEmpty)
                                       Text(
                                         tarea.descripcion,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: AppColors.textSoft,
-                                          fontSize: 13,
+                                        style: TextStyle(
+                                          color: p.textSoft,
+                                          fontSize: 15,
                                         ),
                                       ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Alumnos: ${tarea.alumnoIds.length} asignados | Aula: ${tarea.aulaId.isEmpty ? 'Sin aula' : tarea.aulaId}',
-                                      style: const TextStyle(
-                                        color: AppColors.textSoft,
-                                        fontSize: 12,
+                                      style: TextStyle(
+                                        color: p.textSoft,
+                                        fontSize: 14,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
@@ -871,12 +910,12 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                                   ? Icons.check_circle
                                                   : Icons
                                                         .radio_button_unchecked,
-                                              size: 16,
+                                              size: 20,
                                               color: todas
-                                                  ? AppColors.greenDark
-                                                  : AppColors.textSoft,
+                                                  ? p.greenDark
+                                                  : p.textSoft,
                                             ),
-                                            const SizedBox(width: 4),
+                                            const SizedBox(width: 6),
                                             Text(
                                               todas
                                                   ? 'Completada'
@@ -884,11 +923,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                                   ? 'Completada por $hechos de ${ids.length}'
                                                   : 'Pendiente',
                                               style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
                                                 color: todas
-                                                    ? AppColors.greenDark
-                                                    : AppColors.textSoft,
+                                                    ? p.greenDark
+                                                    : p.textSoft,
                                               ),
                                             ),
                                           ],
@@ -902,6 +941,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                                 icon: const Icon(
                                   Icons.delete_outline,
                                   color: Colors.redAccent,
+                                  size: 28,
                                 ),
                                 tooltip: 'Eliminar tarea',
                                 onPressed: () => _confirmarEliminacion(tarea),
@@ -919,14 +959,26 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   Widget _buildFormularioAsignacion(List<Tarea> solapamientos) {
+    final p = context.palette;
     final hayConflicto = solapamientos.isNotEmpty;
     final esEdicion = _tareaEnEdicion != null;
 
+    Widget etiqueta(String texto) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        texto,
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+          color: p.textDark,
+        ),
+      ),
+    );
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        color: p.surface,
+        borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -940,27 +992,30 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                 children: [
                   Text(
                     esEdicion ? 'Editar Tarea' : 'Planificar Nueva Tarea',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: p.textDark,
                     ),
                   ),
                   if (esEdicion)
                     TextButton.icon(
-                      icon: const Icon(Icons.cancel_outlined, size: 18),
-                      label: const Text('Cancelar edición'),
+                      icon: const Icon(Icons.cancel_outlined, size: 22),
+                      label: const Text(
+                        'Cancelar edición',
+                        style: TextStyle(fontSize: 16),
+                      ),
                       onPressed: _limpiarFormulario,
                     ),
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Modalidad de Asignación:',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
+              etiqueta('Modalidad de Asignación:'),
               SegmentedButton<TipoAsignacion>(
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: p.primary,
+                  selectedForegroundColor: Colors.white,
+                ),
                 segments: const [
                   ButtonSegment(
                     value: TipoAsignacion.individual,
@@ -991,22 +1046,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               _buildSelectorAlumnos(),
               const SizedBox(height: 16),
               if (_tipoAsignacion == TipoAsignacion.recurrente) ...[
-                const Text(
-                  'Frecuencia de repetición:',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
+                etiqueta('Frecuencia de repetición:'),
                 DropdownButtonFormField<FrecuenciaRecurrencia>(
                   initialValue: _frecuencia,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
+                  style: TextStyle(fontSize: 17, color: p.textDark),
+                  decoration: _deco(p, '', compacto: true),
                   items: const [
                     DropdownMenuItem(
                       value: FrecuenciaRecurrencia.diario,
@@ -1027,12 +1071,11 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               ],
               TextFormField(
                 controller: _nombreCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Nombre de la tarea *',
-                  hintText: 'Ej. Lectura compartida, Taller de Plástica',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                style: const TextStyle(fontSize: 18),
+                decoration: _deco(
+                  p,
+                  'Nombre de la tarea *',
+                  hint: 'Ej. Lectura compartida, Taller de Plástica',
                 ),
                 validator: (val) => val == null || val.trim().isEmpty
                     ? 'Ingresa el nombre de la tarea'
@@ -1042,58 +1085,45 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               TextFormField(
                 controller: _descCtrl,
                 maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Descripción / Instrucciones',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                style: const TextStyle(fontSize: 17),
+                decoration: _deco(p, 'Descripción / Instrucciones'),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _aulaCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Aula / Espacio escolar',
-                  hintText: 'Ej. Aula TEA, Gimnasio, Aula 3',
-                  prefixIcon: const Icon(Icons.room_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                style: const TextStyle(fontSize: 17),
+                decoration: _deco(
+                  p,
+                  'Aula / Espacio escolar',
+                  hint: 'Ej. Aula TEA, Gimnasio, Aula 3',
+                  icono: Icons.room_outlined,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ---- SECCIÓN MULTIMEDIA (HU 08.2) ----
-              const Text(
-                'Recursos Multimedia (Opcional):',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
+              etiqueta('Recursos Multimedia (Opcional):'),
               TextFormField(
                 controller: _enlaceWebCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Enlace web (YouTube, Drive, recurso externo...)',
-                  hintText: 'https://...',
-                  prefixIcon: const Icon(Icons.link),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                style: const TextStyle(fontSize: 17),
+                decoration: _deco(
+                  p,
+                  'Enlace web (YouTube, Drive, recurso externo...)',
+                  hint: 'https://...',
+                  icono: Icons.link,
                 ),
               ),
               const SizedBox(height: 10),
               if (widget.subiendoMultimedia)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
                     children: [
-                      LinearProgressIndicator(),
-                      SizedBox(height: 4),
+                      const LinearProgressIndicator(),
+                      const SizedBox(height: 6),
                       Text(
                         'Subiendo archivo a Firebase...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSoft,
-                        ),
+                        style: TextStyle(fontSize: 14, color: p.textSoft),
                       ),
                     ],
                   ),
@@ -1107,13 +1137,14 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
+                              style: _estiloSecundario,
                               icon: Icon(
                                 _audioUrl != null
                                     ? Icons.check_circle
                                     : Icons.audiotrack,
                                 color: _audioUrl != null
-                                    ? AppColors.greenDark
-                                    : AppColors.primary,
+                                    ? p.greenDark
+                                    : p.primary,
                               ),
                               label: Text(
                                 _audioUrl != null
@@ -1137,7 +1168,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                               icon: const Icon(
                                 Icons.close,
                                 color: Colors.redAccent,
-                                size: 20,
+                                size: 24,
                               ),
                               tooltip: 'Quitar audio',
                               onPressed: () => setState(() => _audioUrl = null),
@@ -1152,13 +1183,14 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
+                              style: _estiloSecundario,
                               icon: Icon(
                                 _videoUrl != null
                                     ? Icons.check_circle
                                     : Icons.video_library,
                                 color: _videoUrl != null
-                                    ? AppColors.greenDark
-                                    : AppColors.primary,
+                                    ? p.greenDark
+                                    : p.primary,
                               ),
                               label: Text(
                                 _videoUrl != null
@@ -1182,7 +1214,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                               icon: const Icon(
                                 Icons.close,
                                 color: Colors.redAccent,
-                                size: 20,
+                                size: 24,
                               ),
                               tooltip: 'Quitar vídeo',
                               onPressed: () => setState(() => _videoUrl = null),
@@ -1192,22 +1224,19 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                     ),
                   ],
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ---- LISTA DE VERIFICACIÓN / PASOS (HU 09) ----
               _buildSeccionPasos(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ---- HORARIO ESCOLAR ----
-              const Text(
-                'Horario Escolar:',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
+              etiqueta('Horario Escolar:'),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
+                      style: _estiloSecundario,
                       icon: const Icon(Icons.access_time),
                       label: Text('Inicio: ${_horaInicio.format(context)}'),
                       onPressed: () => _seleccionarHora(esInicio: true),
@@ -1216,6 +1245,7 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
+                      style: _estiloSecundario,
                       icon: const Icon(Icons.access_time_filled),
                       label: Text('Fin: ${_horaFin.format(context)}'),
                       onPressed: () => _seleccionarHora(esInicio: false),
@@ -1226,39 +1256,37 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               const SizedBox(height: 16),
               if (hayConflicto)
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.orangeSoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.orange),
+                    color: p.orangeSoft,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: p.orange, width: 2),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.warning_amber_rounded,
-                        color: AppColors.orange,
-                        size: 28,
+                        color: p.orange,
+                        size: 32,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Solapamiento detectado',
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.orange,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: p.orange,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Existe conflicto con ${solapamientos.length} tarea(s) en este horario: "${solapamientos.first.nombre}". Modifica la hora o los alumnos asignados para evitar cruces.',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textDark,
-                              ),
+                              style: TextStyle(fontSize: 15, color: p.textDark),
                             ),
                           ],
                         ),
@@ -1269,27 +1297,29 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               else
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 14,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.greenSoft,
-                    borderRadius: BorderRadius.circular(8),
+                    color: p.greenSoft,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
-                    children: const [
+                    children: [
                       Icon(
                         Icons.check_circle_outline,
-                        color: AppColors.greenDark,
-                        size: 20,
+                        color: p.greenDark,
+                        size: 26,
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Horario escolar libre de solapamientos.',
-                        style: TextStyle(
-                          color: AppColors.greenDark,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Horario escolar libre de solapamientos.',
+                          style: TextStyle(
+                            color: p.greenDark,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ],
@@ -1298,14 +1328,14 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 60,
                 child: ElevatedButton.icon(
                   icon: _guardando
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                             color: Colors.white,
                           ),
                         )
@@ -1318,10 +1348,14 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: hayConflicto || widget.subiendoMultimedia
                         ? Colors.grey
-                        : AppColors.primary,
+                        : p.primary,
                     foregroundColor: Colors.white,
+                    textStyle: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   onPressed:
@@ -1338,12 +1372,17 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   Widget _buildSeccionPasos() {
+    final p = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Lista de verificación / Paso a paso (Opcional):',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: p.textDark,
+          ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -1351,30 +1390,30 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
             Expanded(
               child: TextField(
                 controller: _nuevoPasoCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Añadir paso...',
-                  hintText: 'Ej. Sacar el cuaderno de la mochila',
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                style: const TextStyle(fontSize: 17),
+                decoration: _deco(
+                  p,
+                  'Añadir paso...',
+                  hint: 'Ej. Sacar el cuaderno de la mochila',
+                  compacto: true,
                 ),
                 onSubmitted: (_) => _agregarPaso(),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             OutlinedButton.icon(
+              style: _estiloSecundario,
               icon: const Icon(Icons.add),
               label: const Text('Añadir'),
               onPressed: _agregarPaso,
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (_pasos.isEmpty)
-          const Text(
+          Text(
             'Sin pasos. Añade pasos y ordénalos para guiar al alumno.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSoft),
+            style: TextStyle(fontSize: 15, color: p.textSoft),
           )
         else
           ReorderableListView.builder(
@@ -1387,60 +1426,63 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
               final paso = _pasos[index];
               return Container(
                 key: ValueKey(paso.id),
-                margin: const EdgeInsets.only(bottom: 6),
+                margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.chip,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.divider),
+                  color: p.background,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 12,
-                      backgroundColor: AppColors.primary,
+                      radius: 15,
+                      backgroundColor: p.primary,
                       child: Text(
                         '${index + 1}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         paso.descripcion,
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: p.textDark,
+                        ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.arrow_upward, size: 18),
+                      icon: const Icon(Icons.arrow_upward, size: 22),
                       tooltip: 'Subir paso',
                       onPressed: index == 0
                           ? null
                           : () => _moverPaso(index, -1),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.arrow_downward, size: 18),
+                      icon: const Icon(Icons.arrow_downward, size: 22),
                       tooltip: 'Bajar paso',
                       onPressed: index == _pasos.length - 1
                           ? null
                           : () => _moverPaso(index, 1),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: const Icon(Icons.edit_outlined, size: 22),
                       tooltip: 'Editar paso',
                       onPressed: () => _editarPaso(index),
                     ),
                     IconButton(
                       icon: const Icon(
                         Icons.delete_outline,
-                        size: 18,
+                        size: 22,
                         color: Colors.redAccent,
                       ),
                       tooltip: 'Eliminar paso',
@@ -1448,12 +1490,9 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
                     ),
                     ReorderableDragStartListener(
                       index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(
-                          Icons.drag_handle,
-                          color: AppColors.textSoft,
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(Icons.drag_handle, color: p.textSoft),
                       ),
                     ),
                   ],
@@ -1466,16 +1505,18 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
   }
 
   Widget _buildSelectorAlumnos() {
+    final p = context.palette;
+
     if (widget.alumnos.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.chip,
-          borderRadius: BorderRadius.circular(10),
+          color: p.cardTint,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: const Text(
+        child: Text(
           'No hay alumnos cargados en la base de datos.',
-          style: TextStyle(color: AppColors.textSoft, fontSize: 13),
+          style: TextStyle(color: p.textSoft, fontSize: 15),
         ),
       );
     }
@@ -1483,10 +1524,8 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     if (_tipoAsignacion == TipoAsignacion.individual) {
       return DropdownButtonFormField<String>(
         initialValue: _alumnoSeleccionadoId,
-        decoration: InputDecoration(
-          labelText: 'Selecciona al Alumno *',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+        style: TextStyle(fontSize: 18, color: p.textDark),
+        decoration: _deco(p, 'Selecciona al Alumno *'),
         items: widget.alumnos
             .map((a) => DropdownMenuItem(value: a.id, child: Text(a.nombre)))
             .toList(),
@@ -1498,18 +1537,28 @@ class _GestorTareasPageState extends State<GestorTareasPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Seleccionar Alumnos del Grupo:',
-          style: TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: p.textDark,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8,
-          runSpacing: 6,
+          spacing: 10,
+          runSpacing: 8,
           children: widget.alumnos.map((a) {
             final seleccionado = _alumnosGrupalesIds.contains(a.id);
             return FilterChip(
               label: Text(a.nombre),
+              labelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              selectedColor: p.badge,
               selected: seleccionado,
               onSelected: (val) {
                 setState(() {
@@ -1773,23 +1822,36 @@ class _EditarPasoDialogState extends State<_EditarPasoDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return AlertDialog(
-      title: const Text('Editar paso'),
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Text(
+        'Editar paso',
+        style: TextStyle(fontWeight: FontWeight.w800, color: p.textDark),
+      ),
       content: TextField(
         controller: _ctrl,
         autofocus: true,
-        decoration: const InputDecoration(
+        style: const TextStyle(fontSize: 18),
+        decoration: InputDecoration(
           labelText: 'Descripción del paso',
-          border: OutlineInputBorder(),
+          filled: true,
+          fillColor: p.background,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         ),
         onSubmitted: (_) => _guardar(),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
         ),
-        FilledButton(onPressed: _guardar, child: const Text('Guardar')),
+        FilledButton(
+          onPressed: _guardar,
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+          child: const Text('Guardar', style: TextStyle(fontSize: 16)),
+        ),
       ],
     );
   }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter/foundation.dart';
 
 class TareaPdf {
   const TareaPdf({
@@ -105,8 +106,8 @@ class AgendaPdfService {
       urls.map((url) async {
         try {
           imagenes[url] = await networkImage(url);
-        } catch (_) {
-          // Sin imagen: se imprime el resto de la fila
+        } catch (e) {
+          debugPrint('Pictograma no cargado: $url -> $e');
         }
       }),
     );

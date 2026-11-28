@@ -1,11 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_theme.dart';
+import '../../data/menu_repository.dart';
 import '../../models/usuario.dart';
 import '../../viewmodels/auth_view_model.dart';
 import '../../viewmodels/gestor_tareas_view_model.dart';
 import 'gestor_tareas_page.dart';
-import '../../data/menu_repository.dart';
 
 class GestorTareasScreen extends StatefulWidget {
   const GestorTareasScreen({
@@ -44,17 +45,53 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final user = context.watch<AuthViewModel>().usuario;
+
     if (!_tieneAcceso(user)) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Planificar tareas')),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Acceso denegado: la planificación de tareas es exclusiva para el profesorado.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18),
+        backgroundColor: p.background,
+        appBar: AppBar(
+          title: Text(
+            'Planificar tareas',
+            style: TextStyle(color: p.primary, fontWeight: FontWeight.w800),
+          ),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: p.surface,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_outline, size: 64, color: p.orange),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Acceso denegado',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: p.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'La planificación de tareas es exclusiva para el profesorado.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 19, color: p.textSoft),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -68,8 +105,9 @@ class _GestorTareasScreenState extends State<GestorTareasScreen> {
         if (widget.viewModel.cargando &&
             widget.viewModel.tareas.isEmpty &&
             !widget.viewModel.subiendoMultimedia) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: p.background,
+            body: Center(child: CircularProgressIndicator(color: p.primary)),
           );
         }
 
